@@ -278,9 +278,10 @@ async function getAvailableStudents(req, res, next) {
  */
 async function getStudentSubjects(req, res, next) {
   try {
-    const studentId = req.user.sub;
+    const userId = req.user.sub;
 
-    const student = await Student.findById(studentId)
+    // Find student by userId field, not by student's _id
+    const student = await Student.findOne({ userId })
       .populate('subjects')
       .select('subjects');
 
