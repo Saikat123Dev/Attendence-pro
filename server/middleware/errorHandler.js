@@ -5,7 +5,7 @@ function errorHandler(err, req, res, next) {
   console.error('Error:', err);
 
   // Mongoose validation error
-  if (err.name === 'ValidationError') {
+  if (err.name === 'ValidationError' && err.errors) {
     const messages = Object.values(err.errors).map((e) => e.message);
     return res.status(400).json({
       error: 'VALIDATION_ERROR',
@@ -13,12 +13,26 @@ function errorHandler(err, req, res, next) {
     });
   }
 
+  // express-rate-limit misconfiguration error (e.g. on Render without trust proxy)
+  if (err.code === 'ERR_ERL_UNEXPECTED_X_FORWARDED_FOR') {
+    console.error('[RateLimiter] Trust proxy not configured correctly:', err.message);
+    // Don't block the user — just skip rate limiting for this request
+    return res.status(500).json({
+      error: 'SERVER_CONFIG_ERROR',
+      message: 'Server configuration error. Please try again.',
+    });
+  }
+
   // Mongoose duplicate key error
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
+    const field = Object.keys(err.keyValue || {})[0] || 'field';
+    const value = err.keyValue?.[field];
+    const friendlyField = field === 'email' ? 'email address' : field;
     return res.status(409).json({
       error: 'DUPLICATE_ENTRY',
-      message: `${field} already exists`,
+      message: field === 'email'
+        ? `An account with this email already exists. Please login instead.`
+        : `This ${friendlyField} is already taken: ${value}`,
     });
   }
 
@@ -46,9 +60,10 @@ function errorHandler(err, req, res, next) {
   }
 
   // Default server error
-  return res.status(err.status || 500).json({
-    error: err.status === 500 ? 'SERVER_ERROR' : err.error || 'INTERNAL_ERROR',
-    message: err.status === 500 ? 'Internal server error' : err.message,
+  const statusCode = err.status || 500;
+  return res.status(statusCode).json({
+    error: statusCode !== 500 ? (err.error || 'REQUEST_ERROR') : 'SERVER_ERROR',
+    message: statusCode !== 500 ? err.message : 'Internal server error',
   });
 }
 

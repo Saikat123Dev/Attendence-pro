@@ -7,6 +7,11 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 
+// Trust the first proxy (required for Render, Railway, Heroku, etc.)
+// Without this, express-rate-limit throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+// and crashes ALL requests when behind a reverse proxy.
+app.set('trust proxy', 1);
+
 // Security headers with Helmet
 app.use(
   helmet({
@@ -35,13 +40,11 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging (development)
-if (process.env.NODE_ENV !== 'production') {
-  app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
-    next();
-  });
-}
+// Request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.path} [${req.ip}]`);
+  next();
+});
 
 // Apply rate limiter to all API routes
 app.use('/api', apiLimiter);

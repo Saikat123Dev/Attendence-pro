@@ -4,17 +4,12 @@ const mongoose = require('mongoose');
 const app = require('./app');
 const config = require('./config');
 
-// MongoDB connection options
-const mongoOptions = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-};
 
 // Connect to MongoDB
 async function connectDB() {
   try {
     console.log('Connecting to MongoDB...');
-    await mongoose.connect(config.mongoUri, mongoOptions);
+    await mongoose.connect(config.mongoUri);
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
