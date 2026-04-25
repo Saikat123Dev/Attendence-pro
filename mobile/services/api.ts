@@ -151,7 +151,12 @@ class ApiService {
 
   async completeProfile(data: CompleteProfileData) {
     const response = await this.api.post('/auth/complete-profile', data);
-    return response.data;
+    const { user, accessToken, refreshToken } = response as { user?: any; accessToken?: string; refreshToken?: string };
+    if (accessToken && refreshToken) {
+      await AsyncStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+      await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    }
+    return { user };
   }
 
   // ============ Attendance Endpoints ============
@@ -217,6 +222,12 @@ class ApiService {
     return response.data;
   }
 
+  // Get student's enrolled subjects (for STUDENT role)
+  async getStudentSubjects() {
+    const response = await this.api.get('/subjects/student');
+    return response.data;
+  }
+
   async getSubject(id: string) {
     const response = await this.api.get(`/subjects/${id}`);
     return response.data;
@@ -227,8 +238,23 @@ class ApiService {
     return response.data;
   }
 
+  async updateSubject(id: string, data: { name: string; code: string; branch: string; semester: number }) {
+    const response = await this.api.put(`/subjects/${id}`, data);
+    return response.data;
+  }
+
+  async deleteSubject(id: string) {
+    const response = await this.api.delete(`/subjects/${id}`);
+    return response.data;
+  }
+
   async enrollStudents(subjectId: string, studentIds: string[]) {
     const response = await this.api.post(`/subjects/${subjectId}/enroll`, { studentIds });
+    return response.data;
+  }
+
+  async unenrollStudents(subjectId: string, studentIds: string[]) {
+    const response = await this.api.post(`/subjects/${subjectId}/unenroll`, { studentIds });
     return response.data;
   }
 

@@ -21,6 +21,14 @@ router.get('/', authorize('TEACHER'), subjectController.getMySubjects);
  */
 router.get('/available', subjectController.getAvailableStudents);
 
+// New endpoint for students to get their enrolled subjects
+/**
+ * @route   GET /api/subjects/student
+ * @desc    Get student's enrolled subjects
+ * @access  Student
+ */
+router.get('/student', subjectController.getStudentSubjects);
+
 /**
  * @route   GET /api/subjects/:id
  * @desc    Get subject by ID

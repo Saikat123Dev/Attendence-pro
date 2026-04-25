@@ -75,17 +75,9 @@ export default function CompleteProfileScreen() {
         data.semester = parseInt(formData.semester, 10);
       }
 
-      const response = await apiService.completeProfile(data);
-      console.log('completeProfile response:', JSON.stringify(response, null, 2));
-      if (response.accessToken && response.refreshToken) {
-        console.log('Storing new tokens...');
-        await apiService.setTokens({
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-        });
-        console.log('Tokens stored successfully');
-      }
-      setUser(response.user);
+      const { user } = await apiService.completeProfile(data);
+      console.log('completeProfile response:', JSON.stringify(user, null, 2));
+      setUser(user);
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('completeProfile error:', error);

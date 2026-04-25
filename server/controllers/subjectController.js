@@ -272,6 +272,28 @@ async function getAvailableStudents(req, res, next) {
   }
 }
 
+/**
+ * Get student's enrolled subjects
+ * GET /api/subjects/student
+ */
+async function getStudentSubjects(req, res, next) {
+  try {
+    const studentId = req.user.sub;
+
+    const student = await Student.findById(studentId)
+      .populate('subjects')
+      .select('subjects');
+
+    if (!student) {
+      return res.status(404).json({ error: 'STUDENT_NOT_FOUND' });
+    }
+
+    res.json({ subjects: student.subjects || [] });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getMySubjects,
   getSubjectById,
@@ -281,4 +303,5 @@ module.exports = {
   enrollStudents,
   unenrollStudents,
   getAvailableStudents,
+  getStudentSubjects,
 };

@@ -5,7 +5,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { colors, fontSize } from '../../constants/theme';
 
-type BadgeVariant = 'present' | 'absent' | 'late' | 'success' | 'warning' | 'error' | 'info' | 'default' | 'primary' | 'light';
+type BadgeVariant = 'present' | 'absent' | 'late' | 'success' | 'warning' | 'error' | 'info' | 'default' | 'primary' | 'light' | 'danger';
 
 interface BadgeProps {
   text: string;
@@ -27,6 +27,8 @@ export function Badge({ text, variant = 'default', size = 'md', style }: BadgePr
         return { bg: '#10B981', text: '#34D399', border: '#10B98130' };
       case 'warning':
         return { bg: '#F59E0B', text: '#FBBF24', border: '#F59E0B30' };
+      case 'danger':
+        return { bg: '#EF4444', text: '#F87171', border: '#EF444430' };
       case 'error':
         return { bg: '#EF4444', text: '#F87171', border: '#EF444430' };
       case 'info':

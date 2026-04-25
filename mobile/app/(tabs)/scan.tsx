@@ -13,16 +13,16 @@ import {
   Alert,
   Dimensions,
   Pressable,
+  ScrollView,
+  Modal,
 } from 'react-native';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
 import { Card, Button, Badge } from '@/components/ui';
-import { colors, spacing, fontSize, borderRadius, shadows } from '@/constants/theme';
+import { colors, spacing, fontSize } from '@/constants/theme';
 
-// AttendX Dark Pro Theme Colors
 const theme = {
   background: '#0A0D14',
   surface: '#0F1320',
@@ -52,6 +52,7 @@ export default function ScanScreen() {
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [isStarting, setIsStarting] = useState(false);
+  const [qrIntervalId, setQrIntervalId] = useState<ReturnType<typeof setInterval> | null>(null);
 
   const isTeacher = user?.role === 'TEACHER';
   const accentColor = isTeacher ? theme.primary : theme.success;
@@ -64,11 +65,21 @@ export default function ScanScreen() {
   }, []);
 
   useEffect(() => {
+    // Clear any existing interval
+    if (qrIntervalId) {
+      clearInterval(qrIntervalId);
+      setQrIntervalId(null);
+    }
+
     if (isTeacher && selectedSession) {
       const interval = setInterval(fetchQRToken, 2000);
-      return () => clearInterval(interval);
+      setQrIntervalId(interval);
+      return () => {
+        clearInterval(interval);
+        setQrIntervalId(null);
+      };
     }
-  }, [selectedSession]);
+  }, [selectedSession, isTeacher]);
 
   async function loadSubjects() {
     try {
@@ -76,7 +87,6 @@ export default function ScanScreen() {
       setSubjects(res.subjects || []);
     } catch (err: any) {
       console.error('Error loading subjects:', err);
-      console.error('Subjects error response:', err.response?.data);
     }
   }
 
@@ -92,17 +102,13 @@ export default function ScanScreen() {
   async function startSession(subjectId: string) {
     setIsStarting(true);
     try {
-      console.log('Starting session for subject:', subjectId);
       const res = await apiService.startSession(subjectId);
-      console.log('Session started successfully:', res);
       setActiveSessions([res.session]);
       setSelectedSession(res.session);
       setQrData(res.initialToken);
       setShowSubjectModal(false);
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Failed to start session';
-      console.error('Start session error:', errorMsg);
-      console.error('Full error:', err);
       Alert.alert('Error', errorMsg);
     } finally {
       setIsStarting(false);
@@ -110,11 +116,22 @@ export default function ScanScreen() {
   }
 
   async function fetchQRToken() {
-    if (!selectedSession) return;
+    // Don't fetch if no session or session is being stopped
+    if (!selectedSession || !selectedSession._id) return;
     try {
       const res = await apiService.getSessionQR(selectedSession._id);
       setQrData(res.qrData);
-    } catch (err) {
+    } catch (err: any) {
+      // Silently handle errors when session is stopped/deactivated
+      const status = err.response?.status;
+      const errorMsg = err.response?.data?.error || err.response?.data?.message;
+
+      // Handle SESSION_INACTIVE, 400, 404 - session was stopped
+      if (status === 400 || status === 404 || errorMsg === 'SESSION_INACTIVE') {
+        setSelectedSession(null);
+        setQrData(null);
+        return;
+      }
       console.error('Error fetching QR:', err);
     }
   }
@@ -168,10 +185,7 @@ export default function ScanScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.centerContainer}>
-        <LinearGradient
-          colors={[theme.card, theme.elevated]}
-          style={styles.permissionCard}
-        >
+        <View style={styles.permissionCard}>
           <View style={[styles.permissionIconBg, { backgroundColor: theme.primary + '20' }]}>
             <Text style={styles.permissionIcon}>📷</Text>
           </View>
@@ -179,38 +193,22 @@ export default function ScanScreen() {
           <Text style={styles.permissionText}>
             We need camera access to scan QR codes for attendance
           </Text>
-          <Pressable
-            style={({ pressed }) => [
-              styles.permissionButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={requestPermission}
-          >
-            <LinearGradient
-              colors={[theme.primary, '#2D7DD2']}
-              style={styles.permissionButtonGradient}
-            >
-              <Text style={styles.permissionButtonText}>Grant Permission</Text>
-            </LinearGradient>
+          <Pressable style={styles.permissionButton} onPress={requestPermission}>
+            <Text style={styles.permissionButtonText}>Grant Permission</Text>
           </Pressable>
-        </LinearGradient>
+        </View>
       </View>
     );
   }
 
-  // Teacher: Session Selection and QR Display
+  // ============ TEACHER VIEW ============
   if (isTeacher) {
+    // QR Display for active session
     if (selectedSession) {
       return (
         <View style={styles.container}>
           <View style={styles.qrHeader}>
-            <Pressable
-              onPress={() => setSelectedSession(null)}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && styles.backButtonPressed,
-              ]}
-            >
+            <Pressable onPress={() => setSelectedSession(null)} style={styles.backButton}>
               <Text style={styles.backButtonText}>← Back</Text>
             </Pressable>
             <Text style={styles.qrTitle}>Session QR Code</Text>
@@ -218,10 +216,7 @@ export default function ScanScreen() {
           </View>
 
           <View style={styles.qrContainer}>
-            <LinearGradient
-              colors={[theme.card, theme.elevated]}
-              style={styles.qrCard}
-            >
+            <View style={styles.qrCard}>
               <View style={styles.qrCardHeader}>
                 <Badge text="LIVE" variant="success" size="md" />
                 <View style={styles.liveIndicator} />
@@ -236,20 +231,16 @@ export default function ScanScreen() {
                 Students can scan this QR code to mark their attendance
               </Text>
 
-              {/* QR Code Display Area with Glowing Border */}
               <View style={styles.qrDisplayWrapper}>
                 <View style={[styles.qrGlowBorder, { shadowColor: theme.primary }]}>
                   <View style={styles.qrDisplay}>
                     {qrData ? (
-                      <>
-                        <View style={styles.qrPlaceholder}>
-                          <Text style={styles.qrPlaceholderIcon}>⏱</Text>
-                          <Text style={styles.qrPlaceholderText}>QR Token Active</Text>
-                        </View>
-                        <Text style={styles.qrTokenText} numberOfLines={2}>
-                          {qrData}
-                        </Text>
-                      </>
+                      <QRCode
+                        value={qrData}
+                        size={SCAN_AREA_SIZE * 0.6}
+                        backgroundColor="white"
+                        color="#000000"
+                      />
                     ) : (
                       <View style={styles.qrLoading}>
                         <ActivityIndicator size="large" color={theme.primary} />
@@ -258,8 +249,6 @@ export default function ScanScreen() {
                     )}
                   </View>
                 </View>
-
-                {/* Animated Corners */}
                 <View style={[styles.qrCorner, styles.qrCornerTopLeft]} />
                 <View style={[styles.qrCorner, styles.qrCornerTopRight]} />
                 <View style={[styles.qrCorner, styles.qrCornerBottomLeft]} />
@@ -269,7 +258,7 @@ export default function ScanScreen() {
               <View style={styles.qrRefreshContainer}>
                 <Text style={styles.qrRefresh}>🔄 Auto-refreshes every 2 seconds</Text>
               </View>
-            </LinearGradient>
+            </View>
 
             <Pressable
               style={({ pressed }) => [
@@ -277,27 +266,78 @@ export default function ScanScreen() {
                 pressed && styles.buttonPressed,
               ]}
               onPress={async () => {
+                const sessionId = selectedSession._id;
+                setSelectedSession(null); // Immediately clear to stop interval
                 try {
-                  await apiService.stopSession(selectedSession._id);
-                  setSelectedSession(null);
+                  await apiService.stopSession(sessionId);
                   loadActiveSessions();
                 } catch (err) {
                   Alert.alert('Error', 'Failed to stop session');
                 }
               }}
             >
-              <LinearGradient
-                colors={[theme.danger, '#D93A33']}
-                style={styles.stopButtonGradient}
-              >
-                <Text style={styles.stopButtonText}>Stop Session</Text>
-              </LinearGradient>
+              <Text style={styles.stopButtonText}>Stop Session</Text>
             </Pressable>
           </View>
+
+          {/* Subject Selection Modal */}
+          <Modal
+            visible={showSubjectModal}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowSubjectModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <Pressable style={styles.modalBackdrop} onPress={() => setShowSubjectModal(false)} />
+              <View style={styles.modalCard}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Start Session</Text>
+                  <Pressable onPress={() => setShowSubjectModal(false)}>
+                    <Text style={styles.modalClose}>✕</Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.modalSubtitle}>Select a subject</Text>
+
+                <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+                  {subjects.length === 0 ? (
+                    <View style={styles.modalEmpty}>
+                      <Text style={styles.modalEmptyText}>
+                        No subjects found.{'\n'}Create a subject first.
+                      </Text>
+                    </View>
+                  ) : (
+                    subjects.map((subject) => (
+                      <Pressable
+                        key={subject._id}
+                        style={({ pressed }) => [
+                          styles.subjectItem,
+                          pressed && styles.subjectItemPressed,
+                        ]}
+                        onPress={() => startSession(subject._id)}
+                        disabled={isStarting}
+                      >
+                        <View style={[styles.subjectIconBg, { backgroundColor: theme.primary + '20' }]}>
+                          <Text style={styles.subjectIcon}>📚</Text>
+                        </View>
+                        <View style={styles.subjectInfo}>
+                          <Text style={styles.subjectName}>{subject.name}</Text>
+                          <Text style={[styles.subjectCode, { color: theme.primary }]}>
+                            {subject.code} • Sem {subject.semester}
+                          </Text>
+                        </View>
+                        {isStarting && <ActivityIndicator size="small" color={theme.primary} />}
+                      </Pressable>
+                    ))
+                  )}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
         </View>
       );
     }
 
+    // Session Selection Screen
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -305,114 +345,160 @@ export default function ScanScreen() {
           <Text style={styles.subtitle}>Choose an active session to display QR code</Text>
         </View>
 
+        {/* Empty State - Start Session */}
         {activeSessions.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <LinearGradient
-              colors={[theme.card, theme.elevated]}
-              style={styles.emptyCard}
-            >
+          <View style={styles.centerContent}>
+            <View style={styles.emptyCard}>
               <View style={[styles.emptyIconBg, { backgroundColor: theme.textSecondary + '20' }]}>
                 <Text style={styles.emptyIcon}>📭</Text>
               </View>
               <Text style={styles.emptyTitle}>No Active Sessions</Text>
               <Text style={styles.emptyText}>
-                Start a new session from the attendance controls
+                Start a new session to begin taking attendance
               </Text>
               <Pressable
                 style={({ pressed }) => [
-                  styles.startSessionButton,
+                  styles.primaryButton,
                   pressed && styles.buttonPressed,
                 ]}
                 onPress={() => setShowSubjectModal(true)}
               >
-                <LinearGradient
-                  colors={[theme.primary, '#2D7DD2']}
-                  style={styles.startSessionButtonGradient}
-                >
-                  <Text style={styles.startSessionButtonText}>Start Session</Text>
-                </LinearGradient>
+                <Text style={styles.primaryButtonText}>+ Start Session</Text>
               </Pressable>
-            </LinearGradient>
+            </View>
           </View>
         ) : (
-          <View style={styles.sessionList}>
-            <Text style={styles.sessionListTitle}>Active Sessions</Text>
+          // Active Sessions List
+          <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollPadding}>
+            <Text style={styles.sectionTitle}>Active Sessions</Text>
             {activeSessions.map((session) => (
               <Pressable
                 key={session._id}
-                onPress={() => selectSession(session)}
                 style={({ pressed }) => [
                   styles.sessionCard,
                   pressed && styles.sessionCardPressed,
                 ]}
+                onPress={() => selectSession(session)}
               >
-                <LinearGradient
-                  colors={[theme.card, theme.elevated]}
-                  style={styles.sessionCardGradient}
-                >
-                  <View style={styles.sessionInfo}>
-                    <View style={styles.sessionInfoMain}>
-                      <Text style={styles.sessionSubject}>
-                        {(session.subjectId as any)?.name}
-                      </Text>
-                      <Text style={[styles.sessionCode, { color: theme.primary }]}>
-                        {(session.subjectId as any)?.code}
-                      </Text>
-                    </View>
-                    <Badge text="LIVE" variant="success" size="sm" />
-                  </View>
-                  <View style={styles.sessionMeta}>
-                    <Text style={styles.sessionTime}>
-                      Started {new Date(session.startedAt).toLocaleTimeString()}
+                <View style={styles.sessionInfo}>
+                  <View style={styles.sessionInfoMain}>
+                    <Text style={styles.sessionSubject}>
+                      {(session.subjectId as any)?.name}
                     </Text>
-                    <Text style={[styles.tapHint, { color: theme.primary }]}>Tap to show QR →</Text>
+                    <Text style={[styles.sessionCode, { color: theme.primary }]}>
+                      {(session.subjectId as any)?.code}
+                    </Text>
                   </View>
-                </LinearGradient>
+                  <Badge text="LIVE" variant="success" size="sm" />
+                </View>
+                <View style={styles.sessionMeta}>
+                  <Text style={styles.sessionTime}>
+                    Started {new Date(session.startedAt).toLocaleTimeString()}
+                  </Text>
+                  <Text style={[styles.tapHint, { color: theme.primary }]}>Tap to show QR →</Text>
+                </View>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
         )}
+
+        {/* Floating Start Button when sessions exist */}
+        {activeSessions.length > 0 && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.floatingButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() => setShowSubjectModal(true)}
+          >
+            <Text style={styles.floatingButtonText}>+ Start New Session</Text>
+          </Pressable>
+        )}
+
+        {/* Subject Selection Modal */}
+        <Modal
+          visible={showSubjectModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowSubjectModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <Pressable style={styles.modalBackdrop} onPress={() => setShowSubjectModal(false)} />
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Start Session</Text>
+                <Pressable onPress={() => setShowSubjectModal(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </Pressable>
+              </View>
+              <Text style={styles.modalSubtitle}>Select a subject</Text>
+
+              <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+                {subjects.length === 0 ? (
+                  <View style={styles.modalEmpty}>
+                    <Text style={styles.modalEmptyText}>
+                      No subjects found.{'\n'}Create a subject first.
+                    </Text>
+                  </View>
+                ) : (
+                  subjects.map((subject) => (
+                    <Pressable
+                      key={subject._id}
+                      style={({ pressed }) => [
+                        styles.subjectItem,
+                        pressed && styles.subjectItemPressed,
+                      ]}
+                      onPress={() => startSession(subject._id)}
+                      disabled={isStarting}
+                    >
+                      <View style={[styles.subjectIconBg, { backgroundColor: theme.primary + '20' }]}>
+                        <Text style={styles.subjectIcon}>📚</Text>
+                      </View>
+                      <View style={styles.subjectInfo}>
+                        <Text style={styles.subjectName}>{subject.name}</Text>
+                        <Text style={[styles.subjectCode, { color: theme.primary }]}>
+                          {subject.code} • Sem {subject.semester}
+                        </Text>
+                      </View>
+                      {isStarting && <ActivityIndicator size="small" color={theme.primary} />}
+                    </Pressable>
+                  ))
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
 
-  // Student: QR Scanner
+  // ============ STUDENT VIEW ============
   return (
     <View style={styles.container}>
       <CameraView
         style={styles.camera}
-        barcodeScannerSettings={{
-          barcodeTypes: ['qr'],
-        }}
+        barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
       >
         <View style={styles.overlay}>
-          {/* Header */}
           <View style={styles.scanHeader}>
             <Text style={styles.scanTitle}>Scan QR Code</Text>
             <Text style={styles.scanSubtitle}>Point camera at the attendance QR code</Text>
           </View>
 
-          {/* Scan Frame with Animated Corners */}
           <View style={styles.scanFrameContainer}>
             <View style={styles.scanFrame}>
-              {/* Viewfinder with corners */}
               <View style={styles.viewfinder}>
                 <View style={[styles.viewfinderCorner, styles.viewfinderTopLeft]} />
                 <View style={[styles.viewfinderCorner, styles.viewfinderTopRight]} />
                 <View style={[styles.viewfinderCorner, styles.viewfinderBottomLeft]} />
                 <View style={[styles.viewfinderCorner, styles.viewfinderBottomRight]} />
               </View>
-
-              {/* Center scanning area */}
               <View style={styles.scanArea} />
             </View>
-
-            {/* Glow effect around frame */}
             <View style={[styles.scanGlow, { shadowColor: theme.success }]} />
           </View>
 
-          {/* Instructions */}
           <View style={styles.instructionContainer}>
             {isMarking ? (
               <View style={styles.markingContainer}>
@@ -426,7 +512,6 @@ export default function ScanScreen() {
             )}
           </View>
 
-          {/* Rescan Button */}
           {scanned && !isMarking && (
             <Pressable
               style={({ pressed }) => [
@@ -435,70 +520,11 @@ export default function ScanScreen() {
               ]}
               onPress={() => setScanned(false)}
             >
-              <LinearGradient
-                colors={[theme.success + '30', theme.success + '15']}
-                style={styles.rescanButtonGradient}
-              >
-                <Text style={styles.rescanButtonText}>Tap to Scan Again</Text>
-              </LinearGradient>
+              <Text style={styles.rescanButtonText}>Tap to Scan Again</Text>
             </Pressable>
           )}
         </View>
       </CameraView>
-
-      {/* Subject Selection Modal */}
-      {showSubjectModal && (
-        <View style={styles.modalOverlay}>
-          <Pressable
-            style={styles.modalBackdrop}
-            onPress={() => setShowSubjectModal(false)}
-          />
-          <LinearGradient
-            colors={[theme.card, theme.elevated]}
-            style={styles.modalContent}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Start Session</Text>
-              <Pressable onPress={() => setShowSubjectModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
-              </Pressable>
-            </View>
-            <Text style={styles.modalSubtitle}>Select a subject</Text>
-
-            {subjects.length === 0 ? (
-              <View style={styles.modalEmpty}>
-                <Text style={styles.modalEmptyText}>No subjects found. Create a subject first.</Text>
-              </View>
-            ) : (
-              <View style={styles.subjectList}>
-                {subjects.map((subject) => (
-                  <Pressable
-                    key={subject._id}
-                    style={({ pressed }) => [
-                      styles.subjectItem,
-                      pressed && styles.subjectItemPressed,
-                    ]}
-                    onPress={() => startSession(subject._id)}
-                  >
-                    <View style={[styles.subjectIconBg, { backgroundColor: theme.primary + '20' }]}>
-                      <Text style={styles.subjectIcon}>📚</Text>
-                    </View>
-                    <View style={styles.subjectInfo}>
-                      <Text style={styles.subjectName}>{subject.name}</Text>
-                      <Text style={[styles.subjectCode, { color: theme.primary }]}>
-                        {subject.code} • Sem {subject.semester}
-                      </Text>
-                    </View>
-                    {isStarting && (
-                      <ActivityIndicator size="small" color={theme.primary} />
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </LinearGradient>
-        </View>
-      )}
     </View>
   );
 }
@@ -513,6 +539,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: theme.background,
+    padding: spacing.md,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: spacing.md,
   },
   header: {
@@ -530,11 +562,27 @@ const styles = StyleSheet.create({
     color: theme.textSecondary,
     marginTop: spacing.xs,
   },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollPadding: {
+    padding: spacing.md,
+    paddingTop: 0,
+  },
+  sectionTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: theme.textPrimary,
+    marginBottom: spacing.md,
+  },
+
+  // Permission Card
   permissionCard: {
     alignItems: 'center',
     padding: spacing.xl,
     maxWidth: 340,
     borderRadius: 20,
+    backgroundColor: theme.card,
     borderWidth: 1,
     borderColor: theme.border,
   },
@@ -546,9 +594,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  permissionIcon: {
-    fontSize: 40,
-  },
+  permissionIcon: { fontSize: 40 },
   permissionTitle: {
     fontSize: fontSize.xl,
     fontWeight: '700',
@@ -563,31 +609,27 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   permissionButton: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  permissionButtonGradient: {
+    backgroundColor: theme.primary,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    minWidth: 180,
-    alignItems: 'center',
+    borderRadius: 14,
   },
   permissionButtonText: {
     color: colors.white,
     fontWeight: '700',
     fontSize: fontSize.md,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: spacing.md,
-  },
+
+  // Empty State
   emptyCard: {
     alignItems: 'center',
     padding: spacing.xl,
     borderRadius: 20,
+    backgroundColor: theme.card,
     borderWidth: 1,
     borderColor: theme.border,
+    width: '100%',
+    maxWidth: 340,
   },
   emptyIconBg: {
     width: 80,
@@ -597,9 +639,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  emptyIcon: {
-    fontSize: 40,
-  },
+  emptyIcon: { fontSize: 40 },
   emptyTitle: {
     fontSize: fontSize.xl,
     fontWeight: '700',
@@ -612,51 +652,61 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
-  startSessionButton: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  startSessionButtonGradient: {
+
+  // Buttons
+  primaryButton: {
+    backgroundColor: theme.primary,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
+    borderRadius: 14,
+    minWidth: 180,
+    alignItems: 'center',
   },
-  startSessionButtonText: {
+  primaryButtonText: {
     color: colors.white,
     fontWeight: '700',
     fontSize: fontSize.md,
   },
-  sessionList: {
-    padding: spacing.md,
-  },
-  sessionListTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
-    color: theme.textPrimary,
-    marginBottom: spacing.md,
-  },
-  sessionCard: {
-    marginBottom: spacing.sm,
+  floatingButton: {
+    position: 'absolute',
+    bottom: 100,
+    left: spacing.lg,
+    right: spacing.lg,
+    backgroundColor: theme.primary,
+    paddingVertical: spacing.md,
     borderRadius: 14,
-    overflow: 'hidden',
+    alignItems: 'center',
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  floatingButtonText: {
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: fontSize.md,
+  },
+
+  // Session List
+  sessionCard: {
+    backgroundColor: theme.card,
+    borderRadius: 14,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   sessionCardPressed: {
     transform: [{ scale: 0.98 }],
     opacity: 0.8,
-  },
-  sessionCardGradient: {
-    padding: spacing.md,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: theme.border,
   },
   sessionInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  sessionInfoMain: {
-    flex: 1,
-  },
+  sessionInfoMain: { flex: 1 },
   sessionSubject: {
     fontSize: fontSize.lg,
     fontWeight: '700',
@@ -684,21 +734,17 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: '600',
   },
+
+  // QR Display
   qrHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: spacing.md,
     paddingTop: spacing.lg,
-    backgroundColor: theme.background,
   },
-  backButton: {
-    padding: spacing.sm,
-    borderRadius: 10,
-  },
-  backButtonPressed: {
-    opacity: 0.7,
-  },
+  backButton: { padding: spacing.sm },
+  backButtonPressed: { opacity: 0.7 },
   backButtonText: {
     fontSize: fontSize.md,
     color: theme.primary,
@@ -718,6 +764,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.xl,
     borderRadius: 20,
+    backgroundColor: theme.card,
     borderWidth: 1,
     borderColor: theme.border,
   },
@@ -749,7 +796,6 @@ const styles = StyleSheet.create({
     color: theme.textSecondary,
     textAlign: 'center',
     marginTop: spacing.md,
-    lineHeight: 22,
   },
   qrDisplayWrapper: {
     position: 'relative',
@@ -811,13 +857,8 @@ const styles = StyleSheet.create({
     borderRightColor: theme.primary,
     borderBottomRightRadius: 8,
   },
-  qrPlaceholder: {
-    alignItems: 'center',
-  },
-  qrPlaceholderIcon: {
-    fontSize: 48,
-    marginBottom: spacing.sm,
-  },
+  qrPlaceholder: { alignItems: 'center' },
+  qrPlaceholderIcon: { fontSize: 48, marginBottom: spacing.sm },
   qrPlaceholderText: {
     fontSize: fontSize.sm,
     color: '#666',
@@ -829,9 +870,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.md,
   },
-  qrLoading: {
-    alignItems: 'center',
-  },
+  qrLoading: { alignItems: 'center' },
   qrLoadingText: {
     fontSize: fontSize.sm,
     color: theme.textSecondary,
@@ -850,22 +889,21 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   stopButton: {
+    backgroundColor: theme.danger,
+    paddingVertical: spacing.md,
     borderRadius: 14,
-    overflow: 'hidden',
+    alignItems: 'center',
     marginTop: spacing.xl,
   },
-  stopButtonGradient: {
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
+  stopButtonGradient: { paddingVertical: spacing.md, alignItems: 'center' },
   stopButtonText: {
     color: colors.white,
     fontWeight: '700',
     fontSize: fontSize.md,
   },
-  camera: {
-    flex: 1,
-  },
+
+  // Camera
+  camera: { flex: 1 },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -884,7 +922,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: '800',
     color: colors.white,
-    letterSpacing: -0.3,
   },
   scanSubtitle: {
     fontSize: fontSize.sm,
@@ -980,40 +1017,30 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: fontSize.md,
     fontWeight: '500',
-    textAlign: 'center',
   },
   rescanButton: {
     position: 'absolute',
     bottom: 60,
-    borderRadius: 25,
-    overflow: 'hidden',
-  },
-  rescanButtonPressed: {
-    opacity: 0.8,
-  },
-  rescanButtonGradient: {
+    backgroundColor: theme.success + '30',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderRadius: 25,
     borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.4)',
   },
+  rescanButtonPressed: { opacity: 0.8 },
   rescanButtonText: {
     color: theme.success,
     fontSize: fontSize.md,
     fontWeight: '600',
   },
-  buttonPressed: {
-    transform: [{ scale: 0.97 }],
-    opacity: 0.9,
-  },
+
+  // Modal
   modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'flex-end',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.85)',
   },
   modalBackdrop: {
     position: 'absolute',
@@ -1021,20 +1048,25 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
   },
-  modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+  modalCard: {
+    width: '90%',
+    maxWidth: 400,
     maxHeight: '70%',
+    backgroundColor: theme.card,
+    borderRadius: 20,
+    padding: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 20,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   modalTitle: {
     fontSize: fontSize.xl,
@@ -1049,7 +1081,10 @@ const styles = StyleSheet.create({
   modalSubtitle: {
     fontSize: fontSize.md,
     color: theme.textSecondary,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  modalScrollView: {
+    maxHeight: 300,
   },
   modalEmpty: {
     padding: spacing.xl,
@@ -1059,9 +1094,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: theme.textSecondary,
     textAlign: 'center',
-  },
-  subjectList: {
-    gap: spacing.sm,
+    lineHeight: 22,
   },
   subjectItem: {
     flexDirection: 'row',
@@ -1069,12 +1102,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.background,
     borderRadius: 14,
     padding: spacing.md,
+    marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: theme.border,
   },
-  subjectItemPressed: {
-    opacity: 0.7,
-  },
+  subjectItemPressed: { opacity: 0.7 },
   subjectIconBg: {
     width: 44,
     height: 44,
@@ -1083,12 +1115,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: spacing.md,
   },
-  subjectIcon: {
-    fontSize: 18,
-  },
-  subjectInfo: {
-    flex: 1,
-  },
+  subjectIcon: { fontSize: 18 },
+  subjectInfo: { flex: 1 },
   subjectName: {
     fontSize: fontSize.md,
     fontWeight: '600',
@@ -1098,5 +1126,10 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     marginTop: 2,
     fontWeight: '600',
+  },
+
+  buttonPressed: {
+    transform: [{ scale: 0.97 }],
+    opacity: 0.9,
   },
 });

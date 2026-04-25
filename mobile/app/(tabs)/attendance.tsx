@@ -43,6 +43,7 @@ export default function AttendanceScreen() {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sessions, setSessions] = useState<any[]>([]);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -58,7 +59,7 @@ export default function AttendanceScreen() {
     try {
       if (isTeacher) {
         const historyRes = await apiService.getSessionHistory();
-        setRecords(historyRes.records || []);
+        setSessions(historyRes.sessions || []);
       } else {
         const [recordsRes, statsRes] = await Promise.all([
           apiService.getMyAttendance(selectedSubject ? { subjectId: selectedSubject } : undefined),
@@ -86,6 +87,8 @@ export default function AttendanceScreen() {
 
   // Teacher: Show session management and student attendance
   if (isTeacher) {
+    const activeSessions = sessions.filter(s => s.status === 'ACTIVE');
+
     return (
       <ScrollView
         style={styles.container}
@@ -99,107 +102,87 @@ export default function AttendanceScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Quick Actions Card with Gradient */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Attendance Management</Text>
-          <LinearGradient
-            colors={[theme.card, theme.elevated]}
-            style={styles.manageCard}
-          >
-            <View style={styles.manageActions}>
+        {/* Active Sessions Alert */}
+        {activeSessions.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.alertBanner}>
+              <View style={styles.alertDot} />
+              <Text style={styles.alertText}>{activeSessions.length} Active Session{activeSessions.length > 1 ? 's' : ''}</Text>
               <Pressable
-                style={({ pressed }) => [
-                  styles.manageButton,
-                  pressed && styles.manageButtonPressed,
-                ]}
+                style={styles.alertAction}
                 onPress={() => router.push('/(tabs)/scan')}
               >
-                <LinearGradient
-                  colors={[theme.primary, '#2D7DD2']}
-                  style={styles.manageButtonGradient}
-                >
-                  <Text style={styles.manageButtonIcon}>▶</Text>
-                  <Text style={styles.manageButtonText}>Start Session</Text>
-                </LinearGradient>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.manageButtonOutline,
-                  pressed && styles.manageButtonOutlinePressed,
-                ]}
-              >
-                <View style={styles.manageButtonContent}>
-                  <Text style={styles.manageButtonOutlineIcon}>📋</Text>
-                  <Text style={styles.manageButtonOutlineText}>View All</Text>
-                </View>
+                <Text style={styles.alertActionText}>View →</Text>
               </Pressable>
             </View>
-          </LinearGradient>
-        </View>
+          </View>
+        )}
 
         {/* Recent Sessions */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Sessions</Text>
-            <Text style={styles.sessionCount}>{records.length} total</Text>
+            <Text style={styles.sessionCount}>{sessions.length} total</Text>
           </View>
-          {records.length === 0 ? (
-            <LinearGradient
-              colors={[theme.card, theme.elevated]}
-              style={styles.emptyCard}
-            >
-              <EmptyState
-                title="No sessions found"
-                message="Your attendance sessions will appear here"
-                icon="📭"
-              />
-            </LinearGradient>
+          {sessions.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIconBox}>
+                <Text style={styles.emptyIconLarge}>📭</Text>
+              </View>
+              <Text style={styles.emptyTitle}>No Sessions Yet</Text>
+              <Text style={styles.emptyText}>Start your first attendance session to see it here</Text>
+              <Pressable
+                style={styles.emptyButton}
+                onPress={() => router.push('/(tabs)/scan')}
+              >
+                <Text style={styles.emptyButtonText}>Start Session</Text>
+              </Pressable>
+            </View>
           ) : (
             <View style={styles.sessionsList}>
-              {records.slice(0, 20).map((record, index) => (
+              {sessions.slice(0, 15).map((session) => (
                 <Pressable
-                  key={record._id}
+                  key={session._id}
                   style={({ pressed }) => [
                     styles.sessionItem,
                     pressed && styles.sessionItemPressed,
                   ]}
+                  onPress={() => router.push('/(tabs)/scan')}
                 >
-                  <LinearGradient
-                    colors={[theme.card, theme.elevated]}
-                    style={styles.sessionItemGradient}
-                  >
-                    <View style={styles.sessionItemContent}>
-                      <View style={styles.sessionItemLeft}>
-                        <View style={[styles.sessionItemIconBg, { backgroundColor: theme.primary + '20' }]}>
-                          <Text style={styles.sessionItemIcon}>📚</Text>
-                        </View>
-                        <View style={styles.sessionItemInfo}>
-                          <Text style={styles.sessionSubject}>
-                            {(record.subjectId as any)?.name || 'Unknown'}
-                          </Text>
-                          <Text style={[styles.sessionCode, { color: theme.primary }]}>
-                            {(record.subjectId as any)?.code}
-                          </Text>
-                        </View>
+                  <View style={styles.sessionItemContent}>
+                    <View style={styles.sessionItemLeft}>
+                      <View style={[styles.sessionItemIconBg, { backgroundColor: session.status === 'ACTIVE' ? theme.success + '20' : theme.primary + '20' }]}>
+                        <Text style={styles.sessionItemIcon}>📚</Text>
                       </View>
-                      <View style={styles.sessionItemRight}>
-                        <Badge
-                          text={record.status}
-                          variant={record.status === 'PRESENT' ? 'success' : 'error'}
-                          size="sm"
-                        />
-                        <Text style={styles.sessionDate}>
-                          {new Date(record.createdAt || record.markedAt).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
+                      <View style={styles.sessionItemInfo}>
+                        <Text style={styles.sessionSubject}>
+                          {(session.subjectId as any)?.name || 'Unknown'}
+                        </Text>
+                        <Text style={[styles.sessionCode, { color: session.status === 'ACTIVE' ? theme.success : theme.primary }]}>
+                          {(session.subjectId as any)?.code}
                         </Text>
                       </View>
                     </View>
-                    {index < Math.min(records.length, 20) - 1 && (
-                      <View style={styles.sessionDivider} />
-                    )}
-                  </LinearGradient>
+                    <View style={styles.sessionItemRight}>
+                      <Badge
+                        text={session.status}
+                        variant={session.status === 'ACTIVE' ? 'success' : 'default'}
+                        size="sm"
+                      />
+                      <Text style={styles.sessionDate}>
+                        {new Date(session.startedAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </Text>
+                      <Text style={styles.sessionTime}>
+                        {new Date(session.startedAt).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                    </View>
+                  </View>
                 </Pressable>
               ))}
             </View>
@@ -529,6 +512,215 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '600',
   },
+  // Quick Actions Grid
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  // New Hero Card Styles
+  heroCard: {
+    borderRadius: 20,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.lg,
+  },
+  heroTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: '800',
+    color: colors.white,
+    letterSpacing: -0.5,
+  },
+  heroSubtitle: {
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 4,
+  },
+  heroBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 20,
+  },
+  heroBadgeText: {
+    color: colors.white,
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+  },
+  heroStats: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 16,
+    padding: spacing.md,
+  },
+  heroStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  heroStatValue: {
+    fontSize: fontSize.xxl,
+    fontWeight: '800',
+    color: colors.white,
+  },
+  heroStatLabel: {
+    fontSize: fontSize.xs,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
+  },
+  heroStatDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginHorizontal: spacing.md,
+  },
+  // New Action Card Styles
+  actionCard: {
+    width: '48%',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
+  },
+  actionCardPressed: {
+    transform: [{ scale: 0.97 }],
+    opacity: 0.85,
+  },
+  actionCardGradient: {
+    padding: spacing.md,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  actionIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  actionIcon: {
+    fontSize: 20,
+  },
+  actionTitle: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+    color: theme.textPrimary,
+    marginBottom: 2,
+  },
+  actionSubtitle: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+  },
+  // Alert Banner
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.success + '15',
+    borderRadius: 12,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: theme.success + '30',
+  },
+  alertDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.success,
+    marginRight: spacing.sm,
+  },
+  alertText: {
+    flex: 1,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: theme.success,
+  },
+  alertAction: {
+    paddingHorizontal: spacing.sm,
+  },
+  alertActionText: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: theme.success,
+  },
+  // Empty State
+  emptyIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyIconLarge: {
+    fontSize: 32,
+  },
+  emptyTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: '700',
+    color: theme.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  emptyText: {
+    fontSize: fontSize.sm,
+    color: theme.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  emptyButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  emptyButtonGradient: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+  },
+  emptyButtonText: {
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: fontSize.sm,
+  },
+  quickActionCard: {
+    width: '48%',
+    backgroundColor: theme.card,
+    borderRadius: 16,
+    padding: spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  quickActionCardPressed: {
+    transform: [{ scale: 0.97 }],
+    opacity: 0.85,
+    backgroundColor: theme.elevated,
+  },
+  quickActionIconBg: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  quickActionIcon: {
+    fontSize: 24,
+  },
+  quickActionTitle: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+    color: theme.textPrimary,
+    marginBottom: 2,
+  },
+  quickActionDesc: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+    textAlign: 'center',
+  },
   manageCard: {
     padding: spacing.lg,
     borderRadius: 14,
@@ -654,7 +846,12 @@ const styles = StyleSheet.create({
   sessionDate: {
     fontSize: fontSize.xs,
     color: theme.textSecondary,
-    marginTop: 4,
+  },
+  sessionTime: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+    fontWeight: '600',
+    marginTop: 2,
   },
   sessionDivider: {
     height: 1,

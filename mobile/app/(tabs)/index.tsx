@@ -279,6 +279,7 @@ export default function HomeScreen() {
                 styles.actionCard,
                 pressed && styles.actionCardPressed,
               ]}
+              onPress={() => router.push('/(tabs)/attendance')}
             >
               <LinearGradient
                 colors={[theme.success + '20', theme.success + '10']}
@@ -293,6 +294,7 @@ export default function HomeScreen() {
                 styles.actionCard,
                 pressed && styles.actionCardPressed,
               ]}
+              onPress={() => router.push('/(tabs)/subjects')}
             >
               <LinearGradient
                 colors={[theme.warning + '20', theme.warning + '10']}
@@ -307,6 +309,7 @@ export default function HomeScreen() {
                 styles.actionCard,
                 pressed && styles.actionCardPressed,
               ]}
+              onPress={() => router.push('/(tabs)/students')}
             >
               <LinearGradient
                 colors={['#9333EA20', '#9333EA10']}

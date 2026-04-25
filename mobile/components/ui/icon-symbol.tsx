@@ -21,6 +21,8 @@ const MAPPING = {
   'qrcode.viewfinder': 'qr-code-scanner',
   'list.clipboard': 'assignment',
   'person.fill': 'person',
+  'books.vertical.fill': 'library-books',
+  'person.3.fill': 'people',
 } as IconMapping;
 
 /**

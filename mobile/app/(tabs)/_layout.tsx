@@ -113,6 +113,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="subjects"
+        options={{
+          title: 'Subjects',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={styles.tabIconContainer}>
+              <IconSymbol size={24} name="books.vertical.fill" color={color} />
+              {focused && <View style={styles.activeDot} />}
+            </View>
+          ),
+          headerTitle: 'My Subjects',
+          tabBarStyle: { display: isTeacher ? 'flex' : 'none' },
+        }}
+      />
+      <Tabs.Screen
         name="attendance"
         options={{
           title: isTeacher ? 'Sessions' : 'Attendance',
@@ -123,6 +137,13 @@ export default function TabLayout() {
             </View>
           ),
           headerTitle: isTeacher ? 'Attendance Sessions' : 'My Attendance',
+        }}
+      />
+      <Tabs.Screen
+        name="students"
+        options={{
+          href: null, // Hide from tab bar - access via Quick Actions in dashboard
+          tabBarStyle: { display: 'none' },
         }}
       />
       <Tabs.Screen
