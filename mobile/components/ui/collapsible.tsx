@@ -1,43 +1,83 @@
+/**
+ * Collapsible Component - AttendX Dark Pro Theme
+ */
 import { PropsWithChildren, useState } from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  withTiming,
+  useSharedValue,
+  FadeIn,
+  FadeOut,
+} from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { colors } from '@/constants/theme';
+import { colors, spacing, borderRadius } from '../../constants/theme';
+import { IconSymbol } from './icon-symbol';
 
 export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
   const [isOpen, setIsOpen] = useState(false);
+  const rotation = useSharedValue(0);
+
+  const toggleOpen = () => {
+    setIsOpen((value) => !value);
+    rotation.value = withTiming(isOpen ? 0 : 90, { duration: 200 });
+  };
+
+  const animatedChevronStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotate: `${rotation.value}deg` }],
+    };
+  });
 
   return (
-    <ThemedView>
+    <View style={styles.container}>
       <TouchableOpacity
         style={styles.heading}
-        onPress={() => setIsOpen((value) => !value)}
-        activeOpacity={0.8}>
-        <IconSymbol
-          name="chevron.right"
-          size={18}
-          weight="medium"
-          color={colors.gray500}
-          style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
-        />
-
-        <ThemedText type="defaultSemiBold">{title}</ThemedText>
+        onPress={toggleOpen}
+        activeOpacity={0.7}
+      >
+        <Animated.View style={animatedChevronStyle}>
+          <IconSymbol
+            name="chevron.right"
+            size={18}
+            weight="medium"
+            color="#5C5C5C"
+          />
+        </Animated.View>
+        <ThemedText type="defaultSemiBold" style={styles.title}>
+          {title}
+        </ThemedText>
       </TouchableOpacity>
-      {isOpen && <ThemedView style={styles.content}>{children}</ThemedView>}
-    </ThemedView>
+      {isOpen && (
+        <Animated.View style={styles.content} entering={FadeIn} exiting={FadeOut}>
+          {children}
+        </Animated.View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#141828',
+    borderRadius: 14,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: '#1E2235',
+  },
   heading: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.sm,
+  },
+  title: {
+    flex: 1,
+    color: '#F0F2FF',
   },
   content: {
-    marginTop: 6,
-    marginLeft: 24,
+    marginTop: spacing.md,
+    marginLeft: spacing.lg,
   },
 });

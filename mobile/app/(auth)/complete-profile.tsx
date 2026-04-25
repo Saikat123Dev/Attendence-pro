@@ -9,21 +9,45 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Pressable,
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
+import { colors, spacing, fontSize, borderRadius, shadows } from '@/constants/theme';
+
+// Theme colors
+const theme = {
+  bg: {
+    base: '#0A0D14',
+    card: '#141828',
+  },
+  primary: '#4F6EF7',
+  accent: '#7B93FC',
+  teacher: '#4F6EF7',
+  student: '#10B981',
+  text: {
+    primary: '#F0F2FF',
+    secondary: '#C0C5E0',
+    muted: '#6B7194',
+  },
+  border: '#1E2235',
+  danger: '#FF5A5A',
+  success: '#4ADE80',
+};
+
+const PRIMARY_GRADIENT = ['#4F6EF7', '#7B93FC'] as const;
 
 export default function CompleteProfileScreen() {
   const { user, setUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [role, setRole] = useState<'TEACHER' | 'STUDENT' | null>(null);
+  const [isPressed, setIsPressed] = useState(false);
   const [formData, setFormData] = useState({
-    // Teacher
     employeeId: '',
     department: '',
-    // Student
     rollNumber: '',
     registrationNumber: '',
     branch: '',
@@ -35,10 +59,7 @@ export default function CompleteProfileScreen() {
   };
 
   async function handleComplete() {
-    if (!role) {
-      Alert.alert('Error', 'Please select a role');
-      return;
-    }
+    if (!role) return;
 
     setIsLoading(true);
     try {
@@ -55,10 +76,22 @@ export default function CompleteProfileScreen() {
       }
 
       const response = await apiService.completeProfile(data);
+      console.log('completeProfile response:', JSON.stringify(response, null, 2));
+      if (response.accessToken && response.refreshToken) {
+        console.log('Storing new tokens...');
+        await apiService.setTokens({
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
+        });
+        console.log('Tokens stored successfully');
+      }
       setUser(response.user);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to complete profile');
+      console.error('completeProfile error:', error);
+      console.error('Error response:', error.response?.data);
+      const errorMsg = error.response?.data?.message || 'Failed to complete profile';
+      Alert.alert('Error', errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -79,150 +112,263 @@ export default function CompleteProfileScreen() {
     }
   };
 
+  const userInitial = user?.name?.charAt(0).toUpperCase() || 'U';
+  const firstName = user?.name?.split(' ')[0] || 'there';
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          {/* Avatar with glow */}
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatarGlowOuter} />
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{userInitial}</Text>
+            </View>
+          </View>
           <Text style={styles.title}>Complete Your Profile</Text>
-          <Text style={styles.subtitle}>Welcome {user?.name}! Tell us more about yourself.</Text>
+          <Text style={styles.subtitle}>
+            Welcome {firstName}! Tell us more about yourself.
+          </Text>
         </View>
 
-        <View style={styles.form}>
+        {/* Form Card */}
+        <View style={styles.formCard}>
           {/* Role Selection */}
-          <View style={styles.roleContainer}>
+          <View style={styles.roleSection}>
             <Text style={styles.sectionTitle}>I am a...</Text>
             <View style={styles.roleButtons}>
-              <TouchableOpacity
-                style={[styles.roleButton, role === 'TEACHER' && styles.roleButtonActive]}
-                onPress={() => setRole('TEACHER')}
+              <Pressable
+                onPress={() => !isLoading && setRole('TEACHER')}
+                disabled={isLoading}
+                style={styles.rolePressable}
               >
-                <Text
+                <View
                   style={[
-                    styles.roleButtonText,
-                    role === 'TEACHER' && styles.roleButtonTextActive,
+                    styles.roleButton,
+                    role === 'TEACHER' && styles.roleButtonTeacherActive,
                   ]}
                 >
-                  Teacher
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.roleButton, role === 'STUDENT' && styles.roleButtonActive]}
-                onPress={() => setRole('STUDENT')}
+                  <View
+                    style={[
+                      styles.roleIcon,
+                      role === 'TEACHER' && styles.roleIconTeacherActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.roleIconText,
+                        role === 'TEACHER' && styles.roleIconTextActive,
+                      ]}
+                    >
+                      T
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.roleButtonText,
+                      role === 'TEACHER' && styles.roleButtonTextTeacherActive,
+                    ]}
+                  >
+                    Teacher
+                  </Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                onPress={() => !isLoading && setRole('STUDENT')}
+                disabled={isLoading}
+                style={styles.rolePressable}
               >
-                <Text
+                <View
                   style={[
-                    styles.roleButtonText,
-                    role === 'STUDENT' && styles.roleButtonTextActive,
+                    styles.roleButton,
+                    role === 'STUDENT' && styles.roleButtonStudentActive,
                   ]}
                 >
-                  Student
-                </Text>
-              </TouchableOpacity>
+                  <View
+                    style={[
+                      styles.roleIcon,
+                      role === 'STUDENT' && styles.roleIconStudentActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.roleIconText,
+                        role === 'STUDENT' && styles.roleIconTextActive,
+                      ]}
+                    >
+                      S
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.roleButtonText,
+                      role === 'STUDENT' && styles.roleButtonTextStudentActive,
+                    ]}
+                  >
+                    Student
+                  </Text>
+                </View>
+              </Pressable>
             </View>
           </View>
 
-          {/* Teacher-specific Fields */}
+          {/* Teacher Fields */}
           {role === 'TEACHER' && (
-            <>
-              <View style={styles.inputContainer}>
+            <View style={styles.fieldsSection}>
+              <View style={styles.inputGroup}>
                 <Text style={styles.label}>Employee ID</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., EMP001"
-                  placeholderTextColor="#999"
-                  value={formData.employeeId}
-                  onChangeText={(v) => updateField('employeeId', v)}
-                  autoCapitalize="characters"
-                  editable={!isLoading}
-                />
+                <View style={styles.inputWrapper}>
+                  <View style={styles.inputIcon}>
+                    <Text style={styles.inputIconText}>#</Text>
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., EMP001"
+                    placeholderTextColor={theme.text.muted}
+                    value={formData.employeeId}
+                    onChangeText={(v) => updateField('employeeId', v)}
+                    autoCapitalize="characters"
+                    editable={!isLoading}
+                  />
+                </View>
               </View>
 
-              <View style={styles.inputContainer}>
+              <View style={styles.inputGroup}>
                 <Text style={styles.label}>Department</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Computer Science"
-                  placeholderTextColor="#999"
-                  value={formData.department}
-                  onChangeText={(v) => updateField('department', v)}
-                  autoCapitalize="words"
-                  editable={!isLoading}
-                />
+                <View style={styles.inputWrapper}>
+                  <View style={styles.inputIcon}>
+                    <Text style={styles.inputIconText}>D</Text>
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., Computer Science"
+                    placeholderTextColor={theme.text.muted}
+                    value={formData.department}
+                    onChangeText={(v) => updateField('department', v)}
+                    autoCapitalize="words"
+                    editable={!isLoading}
+                  />
+                </View>
               </View>
-            </>
+            </View>
           )}
 
-          {/* Student-specific Fields */}
+          {/* Student Fields */}
           {role === 'STUDENT' && (
-            <>
-              <View style={styles.inputContainer}>
+            <View style={styles.fieldsSection}>
+              <View style={styles.inputGroup}>
                 <Text style={styles.label}>Roll Number</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., CS2021001"
-                  placeholderTextColor="#999"
-                  value={formData.rollNumber}
-                  onChangeText={(v) => updateField('rollNumber', v)}
-                  autoCapitalize="characters"
-                  editable={!isLoading}
-                />
+                <View style={styles.inputWrapper}>
+                  <View style={styles.inputIcon}>
+                    <Text style={styles.inputIconText}>R</Text>
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., CS2021001"
+                    placeholderTextColor={theme.text.muted}
+                    value={formData.rollNumber}
+                    onChangeText={(v) => updateField('rollNumber', v)}
+                    autoCapitalize="characters"
+                    editable={!isLoading}
+                  />
+                </View>
               </View>
 
-              <View style={styles.inputContainer}>
+              <View style={styles.inputGroup}>
                 <Text style={styles.label}>Registration Number</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="University registration number"
-                  placeholderTextColor="#999"
-                  value={formData.registrationNumber}
-                  onChangeText={(v) => updateField('registrationNumber', v)}
-                  autoCapitalize="characters"
-                  editable={!isLoading}
-                />
+                <View style={styles.inputWrapper}>
+                  <View style={styles.inputIcon}>
+                    <Text style={styles.inputIconText}>N</Text>
+                  </View>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="University registration number"
+                    placeholderTextColor={theme.text.muted}
+                    value={formData.registrationNumber}
+                    onChangeText={(v) => updateField('registrationNumber', v)}
+                    autoCapitalize="characters"
+                    editable={!isLoading}
+                  />
+                </View>
               </View>
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Branch</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., CSE, ECE, ME"
-                  placeholderTextColor="#999"
-                  value={formData.branch}
-                  onChangeText={(v) => updateField('branch', v)}
-                  autoCapitalize="characters"
-                  editable={!isLoading}
-                />
-              </View>
+              <View style={styles.row}>
+                <View style={[styles.inputGroup, styles.halfWidth]}>
+                  <Text style={styles.label}>Branch</Text>
+                  <View style={styles.inputWrapper}>
+                    <View style={styles.inputIcon}>
+                      <Text style={styles.inputIconText}>B</Text>
+                    </View>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="CSE"
+                      placeholderTextColor={theme.text.muted}
+                      value={formData.branch}
+                      onChangeText={(v) => updateField('branch', v)}
+                      autoCapitalize="characters"
+                      editable={!isLoading}
+                    />
+                  </View>
+                </View>
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Semester</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="1-8"
-                  placeholderTextColor="#999"
-                  value={formData.semester}
-                  onChangeText={(v) => updateField('semester', v)}
-                  keyboardType="number-pad"
-                  editable={!isLoading}
-                />
+                <View style={[styles.inputGroup, styles.halfWidth]}>
+                  <Text style={styles.label}>Semester</Text>
+                  <View style={styles.inputWrapper}>
+                    <View style={styles.inputIcon}>
+                      <Text style={styles.inputIconText}>S</Text>
+                    </View>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="1-8"
+                      placeholderTextColor={theme.text.muted}
+                      value={formData.semester}
+                      onChangeText={(v) => updateField('semester', v)}
+                      keyboardType="number-pad"
+                      editable={!isLoading}
+                    />
+                  </View>
+                </View>
               </View>
-            </>
+            </View>
           )}
 
-          <TouchableOpacity
-            style={[styles.button, !isFormValid() && styles.buttonDisabled]}
+          {/* Complete Button */}
+          <Pressable
             onPress={handleComplete}
+            onPressIn={() => setIsPressed(true)}
+            onPressOut={() => setIsPressed(false)}
             disabled={!isFormValid() || isLoading}
+            style={styles.buttonPressable}
           >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Complete Profile</Text>
-            )}
-          </TouchableOpacity>
+            <LinearGradient
+              colors={!isFormValid() || isLoading ? ['#2A3A5C', '#3A4A6C'] : PRIMARY_GRADIENT}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[
+                styles.button,
+                isPressed && styles.buttonPressed,
+              ]}
+            >
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <Text style={styles.loadingText}>Completing...</Text>
+                </View>
+              ) : (
+                <Text style={styles.buttonText}>Complete Profile</Text>
+              )}
+            </LinearGradient>
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -232,100 +378,224 @@ export default function CompleteProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.bg.base,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
-    paddingTop: 60,
+    padding: spacing.lg,
+    paddingTop: spacing.xxl,
   },
-  header: {
-    marginBottom: 30,
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  avatarContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  avatarGlowOuter: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'transparent',
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 25,
+    elevation: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(79, 110, 247, 0.25)',
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: theme.bg.card,
+    borderWidth: 3,
+    borderColor: theme.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+    ...shadows.md,
+  },
+  avatarText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: theme.primary,
   },
   title: {
-    fontSize: 28,
+    fontSize: fontSize.xxl,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+    color: theme.text.primary,
+    marginBottom: spacing.xs,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: fontSize.md,
+    color: theme.text.secondary,
+    textAlign: 'center',
   },
-  form: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  formCard: {
+    backgroundColor: theme.bg.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.border,
+    ...shadows.lg,
   },
-  roleContainer: {
-    marginBottom: 24,
+  roleSection: {
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: fontSize.sm,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
+    color: theme.text.secondary,
+    marginBottom: spacing.md,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   roleButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
+  },
+  rolePressable: {
+    flex: 1,
   },
   roleButton: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 10,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: theme.border,
     alignItems: 'center',
+    backgroundColor: theme.bg.base,
   },
-  roleButtonActive: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f7ff',
+  roleButtonTeacherActive: {
+    borderColor: theme.teacher,
+    backgroundColor: 'rgba(79, 110, 247, 0.1)',
+  },
+  roleButtonStudentActive: {
+    borderColor: theme.student,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+  },
+  roleIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.bg.base,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  roleIconTeacherActive: {
+    backgroundColor: theme.teacher,
+    borderColor: theme.teacher,
+  },
+  roleIconStudentActive: {
+    backgroundColor: theme.student,
+    borderColor: theme.student,
+  },
+  roleIconText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.text.muted,
+  },
+  roleIconTextActive: {
+    color: '#FFFFFF',
   },
   roleButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#666',
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: theme.text.muted,
   },
-  roleButtonTextActive: {
-    color: '#007AFF',
+  roleButtonTextTeacherActive: {
+    color: theme.teacher,
   },
-  inputContainer: {
-    marginBottom: 16,
+  roleButtonTextStudentActive: {
+    color: theme.student,
+  },
+  fieldsSection: {
+    marginBottom: spacing.md,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  halfWidth: {
+    flex: 1,
+  },
+  inputGroup: {
+    marginBottom: spacing.md,
   },
   label: {
-    fontSize: 14,
+    fontSize: fontSize.sm,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    color: theme.text.primary,
+    marginBottom: spacing.sm,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.bg.base,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  inputIcon: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: 1,
+    borderRightColor: theme.border,
+  },
+  inputIconText: {
+    fontSize: 16,
+    color: theme.primary,
+    fontWeight: '600',
   },
   input: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    padding: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    color: '#333',
+    flex: 1,
+    backgroundColor: 'transparent',
+    padding: spacing.md,
+    fontSize: fontSize.md,
+    color: theme.text.primary,
+    height: 44,
+  },
+  buttonPressable: {
+    marginTop: spacing.sm,
   },
   button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 10,
-    padding: 16,
+    height: 52,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
+    transform: [{ scale: 1 }],
+  },
+  buttonPressed: {
+    transform: [{ scale: 0.97 }],
   },
   buttonDisabled: {
-    opacity: 0.5,
+    backgroundColor: '#2A3A5C',
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: fontSize.lg,
     fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    marginLeft: spacing.sm,
   },
 });

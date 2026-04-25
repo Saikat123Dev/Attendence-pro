@@ -1,11 +1,11 @@
 /**
- * Reusable Badge Component
+ * Reusable Badge Component - AttendX Dark Pro Theme
  */
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, borderRadius, spacing, fontSize } from '../../constants/theme';
+import { colors, fontSize } from '../../constants/theme';
 
-type BadgeVariant = 'success' | 'warning' | 'error' | 'info' | 'default' | 'primary';
+type BadgeVariant = 'present' | 'absent' | 'late' | 'success' | 'warning' | 'error' | 'info' | 'default' | 'primary' | 'light';
 
 interface BadgeProps {
   text: string;
@@ -17,18 +17,26 @@ interface BadgeProps {
 export function Badge({ text, variant = 'default', size = 'md', style }: BadgeProps) {
   const getColors = () => {
     switch (variant) {
+      case 'present':
+        return { bg: '#10B981', text: '#34D399', border: '#10B98130' };
+      case 'absent':
+        return { bg: '#EF4444', text: '#F87171', border: '#EF444430' };
+      case 'late':
+        return { bg: '#F59E0B', text: '#FBBF24', border: '#F59E0B30' };
       case 'success':
-        return { bg: '#D1FAE5', text: '#065F46' };
+        return { bg: '#10B981', text: '#34D399', border: '#10B98130' };
       case 'warning':
-        return { bg: '#FEF3C7', text: '#92400E' };
+        return { bg: '#F59E0B', text: '#FBBF24', border: '#F59E0B30' };
       case 'error':
-        return { bg: '#FEE2E2', text: '#991B1B' };
+        return { bg: '#EF4444', text: '#F87171', border: '#EF444430' };
       case 'info':
-        return { bg: '#DBEAFE', text: '#1E40AF' };
+        return { bg: '#4F6EF7', text: '#93ACFF', border: '#4F6EF730' };
       case 'primary':
-        return { bg: '#DBEAFE', text: '#1E40AF' };
+        return { bg: '#7C3AED', text: '#C4B5FD', border: '#7C3AED30' };
+      case 'light':
+        return { bg: 'rgba(255,255,255,0.15)', text: '#FFFFFF', border: 'rgba(255,255,255,0.3)' };
       default:
-        return { bg: colors.gray100, text: colors.textSecondary };
+        return { bg: '#2D2D2D', text: '#8E8E93', border: '#33333330' };
     }
   };
 
@@ -40,6 +48,8 @@ export function Badge({ text, variant = 'default', size = 'md', style }: BadgePr
         styles.badge,
         size === 'sm' ? styles.badgeSm : styles.badgeMd,
         { backgroundColor: colorScheme.bg },
+        { borderColor: colorScheme.border },
+        { borderWidth: 1 },
         style,
       ]}
     >
@@ -58,22 +68,24 @@ export function Badge({ text, variant = 'default', size = 'md', style }: BadgePr
 
 const styles = StyleSheet.create({
   badge: {
-    borderRadius: borderRadius.full,
+    borderRadius: 20,
     alignSelf: 'flex-start',
   },
   badgeSm: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   badgeMd: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
   text: {
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   textSm: {
-    fontSize: fontSize.xs,
+    fontSize: 10,
   },
   textMd: {
     fontSize: fontSize.sm,

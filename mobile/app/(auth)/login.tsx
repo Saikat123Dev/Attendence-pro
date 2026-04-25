@@ -9,25 +9,52 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
+import { colors, spacing, fontSize, borderRadius, shadows } from '@/constants/theme';
+
+// Theme colors
+const theme = {
+  bg: {
+    base: '#0A0D14',
+    card: '#141828',
+  },
+  primary: '#4F6EF7',
+  accent: '#7B93FC',
+  text: {
+    primary: '#F0F2FF',
+    secondary: '#C0C5E0',
+    muted: '#6B7194',
+  },
+  border: '#1E2235',
+  danger: '#FF5A5A',
+  success: '#4ADE80',
+};
+
+const PRIMARY_GRADIENT = ['#4F6EF7', '#7B93FC'] as const;
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, isLoading, error, clearError } = useAuth();
+  const { login, isLoading: authLoading, error, clearError } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isButtonPressed, setIsButtonPressed] = useState(false);
 
   async function handleLogin() {
     if (!email || !password) return;
 
+    setIsLoading(true);
     try {
       await login(email, password);
-      // Navigation will be handled by auth state change
     } catch (err) {
-      // Error is handled by context
+      // Error handled by context
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -36,81 +63,132 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.title}>Smart Attendance</Text>
-          <Text style={styles.subtitle}>Sign in to continue</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Logo Section */}
+        <View style={styles.logoContainer}>
+          <View style={styles.logoWrapper}>
+            {/* Glow effect behind logo */}
+            <View style={styles.logoGlow} />
+            <View style={styles.logoIcon}>
+              <Text style={styles.logoText}>AX</Text>
+            </View>
+          </View>
         </View>
 
-        <View style={styles.form}>
+        {/* Header Section */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.subtitle}>Sign in to continue to AttendX</Text>
+        </View>
+
+        {/* Form Card */}
+        <View style={styles.formCard}>
           {error && (
             <View style={styles.errorContainer}>
+              <View style={styles.errorIndicator} />
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity onPress={clearError}>
+              <TouchableOpacity onPress={clearError} style={styles.dismissButton}>
                 <Text style={styles.dismissText}>Dismiss</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
-            />
+          {/* Email Input */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email Address</Text>
+            <View style={[styles.inputWrapper, !email && styles.inputWrapperEmpty]}>
+              <View style={styles.inputIcon}>
+                <Text style={styles.inputIconText}>
+                  {/* Email icon */}
+                  <Text style={styles.iconEnvelope}>✉</Text>
+                </Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor={theme.text.muted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isLoading}
+              />
+            </View>
           </View>
 
-          <View style={styles.inputContainer}>
+          {/* Password Input */}
+          <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
+            <View style={[styles.inputWrapper, !password && styles.inputWrapperEmpty]}>
+              <View style={styles.inputIcon}>
+                <Text style={styles.inputIconText}>
+                  <Text style={styles.iconLock}>✕</Text>
+                </Text>
+              </View>
               <TextInput
                 style={[styles.input, styles.passwordInput]}
                 placeholder="Enter your password"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.text.muted}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 editable={!isLoading}
               />
-              <TouchableOpacity
+              <Pressable
                 style={styles.showPassword}
-                onPress={() => setShowPassword(!showPassword)}
+                onPress={() => !isLoading && setShowPassword(!showPassword)}
+                disabled={isLoading}
               >
-                <Text style={styles.showPasswordText}>
+                <Text style={[styles.showPasswordText, showPassword && styles.showPasswordActive]}>
                   {showPassword ? 'Hide' : 'Show'}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
+          {/* Sign In Button */}
+          <Pressable
             onPress={handleLogin}
-            disabled={isLoading || !email || !password}
+            onPressIn={() => setIsButtonPressed(true)}
+            onPressOut={() => setIsButtonPressed(false)}
+            disabled={!email || !password || isLoading}
+            style={styles.buttonPressable}
           >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
+            <LinearGradient
+              colors={(!email || !password || isLoading) ? ['#2A3A5C', '#3A4A6C'] : PRIMARY_GRADIENT}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[
+                styles.button,
+                isButtonPressed && styles.buttonPressed,
+              ]}
+            >
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <Text style={styles.loadingText}>Signing in...</Text>
+                </View>
+              ) : (
+                <Text style={styles.buttonText}>Sign In</Text>
+              )}
+            </LinearGradient>
+          </Pressable>
+        </View>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account?</Text>
-            <Link href="/(auth)/register" asChild>
-              <TouchableOpacity>
-                <Text style={styles.linkText}>Register</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Don't have an account?</Text>
+          <Link href="/(auth)/register" asChild>
+            <TouchableOpacity style={styles.linkButton}>
+              <Text style={styles.linkText}>Register</Text>
+            </TouchableOpacity>
+          </Link>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -120,122 +198,219 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.bg.base,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: spacing.lg,
+    paddingTop: spacing.xxl,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  logoWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 22,
+    backgroundColor: theme.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+    ...shadows.lg,
+  },
+  logoText: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 2,
+  },
+  logoGlow: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 32,
+    backgroundColor: 'transparent',
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 30,
+    elevation: 20,
+    // Fallback for when shadow doesn't work
+    borderWidth: 1,
+    borderColor: 'rgba(79, 110, 247, 0.3)',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: 32,
+    fontSize: fontSize.xxxl,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    color: theme.text.primary,
+    marginBottom: spacing.xs,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: fontSize.md,
+    color: theme.text.secondary,
+    textAlign: 'center',
   },
-  form: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  formCard: {
+    backgroundColor: theme.bg.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.border,
+    ...shadows.lg,
   },
   errorContainer: {
-    backgroundColor: '#fee',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    backgroundColor: 'rgba(255, 90, 90, 0.1)',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#fcc',
+    borderLeftWidth: 3,
+    borderLeftColor: theme.danger,
+  },
+  errorIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.danger,
+    marginRight: spacing.sm,
   },
   errorText: {
-    color: '#c00',
-    fontSize: 14,
+    color: theme.danger,
+    fontSize: fontSize.sm,
     flex: 1,
+  },
+  dismissButton: {
+    paddingLeft: spacing.sm,
   },
   dismissText: {
-    color: '#c00',
+    color: theme.danger,
+    fontSize: fontSize.sm,
     fontWeight: '600',
-    marginLeft: 8,
   },
-  inputContainer: {
-    marginBottom: 20,
+  inputGroup: {
+    marginBottom: spacing.md,
   },
   label: {
-    fontSize: 14,
+    fontSize: fontSize.sm,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    color: theme.text.primary,
+    marginBottom: spacing.sm,
   },
-  input: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    padding: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    color: '#333',
-  },
-  passwordContainer: {
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: theme.bg.base,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  inputWrapperEmpty: {
+    borderColor: theme.border,
+  },
+  inputIcon: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: 1,
+    borderRightColor: theme.border,
+  },
+  inputIconText: {
+    fontSize: 18,
+  },
+  iconEnvelope: {
+    color: theme.primary,
+  },
+  iconLock: {
+    color: theme.primary,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    padding: spacing.md,
+    fontSize: fontSize.md,
+    color: theme.text.primary,
+    height: 48,
   },
   passwordInput: {
-    flex: 1,
+    paddingRight: 60,
   },
   showPassword: {
     position: 'absolute',
-    right: 16,
-    padding: 8,
+    right: spacing.md,
+    padding: spacing.sm,
   },
   showPasswordText: {
-    color: '#007AFF',
-    fontSize: 14,
+    color: theme.text.secondary,
+    fontSize: fontSize.sm,
     fontWeight: '500',
   },
+  showPasswordActive: {
+    color: theme.primary,
+  },
+  buttonPressable: {
+    marginTop: spacing.sm,
+  },
   button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 10,
-    padding: 16,
+    height: 52,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
+    transform: [{ scale: 1 }],
+  },
+  buttonPressed: {
+    transform: [{ scale: 0.97 }],
   },
   buttonDisabled: {
-    opacity: 0.6,
+    backgroundColor: '#2A3A5C',
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: fontSize.lg,
     fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    marginLeft: spacing.sm,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: spacing.xl,
   },
   footerText: {
-    color: '#666',
-    fontSize: 14,
+    color: theme.text.secondary,
+    fontSize: fontSize.sm,
+  },
+  linkButton: {
+    marginLeft: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
   linkText: {
-    color: '#007AFF',
-    fontSize: 14,
+    color: theme.primary,
+    fontSize: fontSize.sm,
     fontWeight: '600',
-    marginLeft: 4,
   },
 });

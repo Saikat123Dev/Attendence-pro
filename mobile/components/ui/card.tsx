@@ -1,5 +1,5 @@
 /**
- * Reusable Card Component - Android Material Design style
+ * Reusable Card Component - AttendX Dark Pro Theme
  */
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
@@ -15,7 +15,7 @@ export function Card({ children, style, padding = 'md' }: CardProps) {
   const paddingStyle = {
     none: {},
     sm: { padding: spacing.sm },
-    md: { padding: spacing.md },
+    md: { padding: 16 },
     lg: { padding: spacing.lg },
   };
 
@@ -28,8 +28,15 @@ export function Card({ children, style, padding = 'md' }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
+    backgroundColor: '#141828',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#1E2235',
     ...shadows.md,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
 });

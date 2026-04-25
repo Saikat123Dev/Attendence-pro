@@ -124,6 +124,9 @@ async function completeProfile(userId, profileData) {
   user.role = role;
   await user.save();
 
+  // Generate new tokens with the correct role
+  const tokens = await generateTokens(user);
+
   // Create role-specific profile
   if (role === 'STUDENT') {
     await Student.create({
@@ -146,7 +149,7 @@ async function completeProfile(userId, profileData) {
   }
 
   const fullUser = await getFullUser(user._id);
-  return { user: fullUser };
+  return { user: fullUser, ...tokens };
 }
 
 /**

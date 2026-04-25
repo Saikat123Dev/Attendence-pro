@@ -1,6 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthTokens } from '../types';
+import { AuthTokens, RegisterRequest } from '../types';
 
 // Use your actual server URL here
 const API_BASE_URL = 'https://attendence-pro-qzxc.onrender.com/api';
@@ -8,6 +8,16 @@ const API_BASE_URL = 'https://attendence-pro-qzxc.onrender.com/api';
 // Storage keys
 const ACCESS_TOKEN_KEY = '@attendance_access_token';
 const REFRESH_TOKEN_KEY = '@attendance_refresh_token';
+
+type CompleteProfileData = {
+  role: 'TEACHER' | 'STUDENT';
+  employeeId?: string;
+  department?: string;
+  rollNumber?: string;
+  registrationNumber?: string;
+  branch?: string;
+  semester?: number;
+};
 
 class ApiService {
   private api: ReturnType<typeof axios.create>;
@@ -139,7 +149,7 @@ class ApiService {
     return response.data;
   }
 
-  async completeProfile(data: Record<string, unknown>) {
+  async completeProfile(data: CompleteProfileData) {
     const response = await this.api.post('/auth/complete-profile', data);
     return response.data;
   }

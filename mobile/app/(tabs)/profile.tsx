@@ -1,5 +1,6 @@
 /**
- * Beautified Profile Screen
+ * Profile Screen - AttendX Dark Pro Theme
+ * Gradient header with avatar, info rows, subject chips, logout button
  */
 import {
   View,
@@ -8,11 +9,29 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Pressable,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import { Card, Avatar, Badge, Button } from '@/components/ui';
 import { colors, spacing, fontSize, borderRadius, shadows } from '@/constants/theme';
-import { StudentProfile, TeacherProfile } from '@/types';
+import { StudentProfile, TeacherProfile, Subject } from '@/types';
+
+// AttendX Dark Pro Theme Colors
+const theme = {
+  background: '#0A0D14',
+  surface: '#0F1320',
+  card: '#141828',
+  elevated: '#1A2035',
+  primary: '#4F6EF7',
+  success: '#10B981',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+  textPrimary: '#F0F2FF',
+  textSecondary: '#C0C5E0',
+  border: '#1E2235',
+  borderLight: '#252B42',
+};
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -21,6 +40,11 @@ export default function ProfileScreen() {
   const profile = isTeacher
     ? (user?.profile as TeacherProfile)
     : (user?.profile as StudentProfile);
+
+  // Role-based gradient colors
+  const headerGradient = isTeacher
+    ? ['#4F6EF7', '#2D7DD2']
+    : ['#10B981', '#059669'];
 
   function handleLogout() {
     Alert.alert(
@@ -44,122 +68,230 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Profile Header */}
-      <Card style={styles.headerCard}>
-        <Avatar
-          name={profile?.name || user?.email || 'U'}
-          size="xl"
-        />
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Profile Header with Gradient */}
+      <LinearGradient
+        colors={headerGradient as [string, string]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.avatarContainer}>
+          <TouchableOpacity activeOpacity={0.8}>
+            <View style={styles.avatarWrapper}>
+              <Avatar
+                name={profile?.name || user?.email || 'U'}
+                size="xxl"
+              />
+              <View style={styles.avatarEditBadge}>
+                <Text style={styles.avatarEditIcon}>✏</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.name}>{profile?.name || user?.email}</Text>
         <Text style={styles.email}>{user?.email}</Text>
-        <Badge
-          text={user?.role || 'USER'}
-          variant={user?.role === 'TEACHER' ? 'primary' : 'info'}
-          style={styles.roleBadge}
-        />
-      </Card>
+        <View style={styles.roleBadgeContainer}>
+          <Badge
+            text={user?.role || 'USER'}
+            variant="light"
+            size="md"
+          />
+        </View>
+      </LinearGradient>
 
       {/* Profile Details */}
-      <Card style={styles.section}>
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Profile Details</Text>
-
-        {isTeacher ? (
-          <>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Employee ID</Text>
-              <Text style={styles.detailValue}>
-                {(profile as TeacherProfile)?.employeeId || 'N/A'}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Department</Text>
-              <Text style={styles.detailValue}>
-                {(profile as TeacherProfile)?.department || 'N/A'}
-              </Text>
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Roll Number</Text>
-              <Text style={styles.detailValue}>
-                {(profile as StudentProfile)?.rollNumber || 'N/A'}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Registration</Text>
-              <Text style={styles.detailValue}>
-                {(profile as StudentProfile)?.registrationNumber || 'N/A'}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Branch</Text>
-              <Text style={styles.detailValue}>
-                {(profile as StudentProfile)?.branch || 'N/A'}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Semester</Text>
-              <Text style={styles.detailValue}>
-                {(profile as StudentProfile)?.semester || 'N/A'}
-              </Text>
-            </View>
-          </>
-        )}
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Member Since</Text>
-          <Text style={styles.detailValue}>
-            {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}
-          </Text>
-        </View>
-      </Card>
-
-      {/* Subjects */}
-      {!isTeacher && (profile as StudentProfile)?.subjects && (
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Enrolled Subjects</Text>
-          <View style={styles.subjectsGrid}>
-            {(profile as StudentProfile)?.subjects?.map((subject: any) => (
-              <View key={subject._id} style={styles.subjectChip}>
-                <Text style={styles.subjectName}>{subject.code}</Text>
+        <LinearGradient
+          colors={[theme.card, theme.elevated]}
+          style={styles.detailsCard}
+        >
+          {isTeacher ? (
+            <>
+              <View style={styles.detailRow}>
+                <View style={styles.detailLabelContainer}>
+                  <Text style={styles.detailLabel}>Employee ID</Text>
+                </View>
+                <Text style={styles.detailValue}>
+                  {(profile as TeacherProfile)?.employeeId || 'N/A'}
+                </Text>
               </View>
-            ))}
+              <View style={[styles.detailRow, styles.detailRowBorder]}>
+                <View style={styles.detailLabelContainer}>
+                  <Text style={styles.detailLabel}>Department</Text>
+                </View>
+                <Text style={styles.detailValue}>
+                  {(profile as TeacherProfile)?.department || 'N/A'}
+                </Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.detailRow}>
+                <View style={styles.detailLabelContainer}>
+                  <Text style={styles.detailLabel}>Roll Number</Text>
+                </View>
+                <Text style={styles.detailValue}>
+                  {(profile as StudentProfile)?.rollNumber || 'N/A'}
+                </Text>
+              </View>
+              <View style={[styles.detailRow, styles.detailRowBorder]}>
+                <View style={styles.detailLabelContainer}>
+                  <Text style={styles.detailLabel}>Registration</Text>
+                </View>
+                <Text style={styles.detailValue}>
+                  {(profile as StudentProfile)?.registrationNumber || 'N/A'}
+                </Text>
+              </View>
+              <View style={[styles.detailRow, styles.detailRowBorder]}>
+                <View style={styles.detailLabelContainer}>
+                  <Text style={styles.detailLabel}>Branch</Text>
+                </View>
+                <Text style={styles.detailValue}>
+                  {(profile as StudentProfile)?.branch || 'N/A'}
+                </Text>
+              </View>
+              <View style={[styles.detailRow, styles.detailRowBorder]}>
+                <View style={styles.detailLabelContainer}>
+                  <Text style={styles.detailLabel}>Semester</Text>
+                </View>
+                <Text style={styles.detailValue}>
+                  {(profile as StudentProfile)?.semester || 'N/A'}
+                </Text>
+              </View>
+            </>
+          )}
+          <View style={styles.detailRow}>
+            <View style={styles.detailLabelContainer}>
+              <Text style={styles.detailLabel}>Member Since</Text>
+            </View>
+            <Text style={styles.detailValue}>
+              {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric',
+              }) : '-'}
+            </Text>
           </View>
-        </Card>
+        </LinearGradient>
+      </View>
+
+      {/* Subjects - Teacher teaches, Student enrolled */}
+      {isTeacher ? (
+        (profile as TeacherProfile)?.subjects && (profile as TeacherProfile)?.subjects?.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Subjects You Teach</Text>
+            <View style={styles.subjectsGrid}>
+              {(profile as TeacherProfile)?.subjects?.map((subject: Subject) => (
+                <LinearGradient
+                  key={subject._id}
+                  colors={[theme.card, theme.elevated]}
+                  style={styles.subjectChip}
+                >
+                  <Text style={[styles.subjectCode, { color: theme.primary }]}>{subject.code}</Text>
+                  <Text style={styles.subjectName} numberOfLines={1}>{subject.name}</Text>
+                </LinearGradient>
+              ))}
+            </View>
+          </View>
+        )
+      ) : (
+        (profile as StudentProfile)?.subjects && (profile as StudentProfile)?.subjects?.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Enrolled Subjects</Text>
+            <View style={styles.subjectsGrid}>
+              {(profile as StudentProfile)?.subjects?.map((subject: Subject) => (
+                <LinearGradient
+                  key={subject._id}
+                  colors={[theme.card, theme.elevated]}
+                  style={styles.subjectChip}
+                >
+                  <Text style={[styles.subjectCode, { color: theme.success }]}>{subject.code}</Text>
+                  <Text style={styles.subjectName} numberOfLines={1}>{subject.name}</Text>
+                </LinearGradient>
+              ))}
+            </View>
+          </View>
+        )
       )}
 
       {/* Settings */}
-      <Card style={styles.section}>
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Notification Settings</Text>
-          <Text style={styles.menuItemArrow}>›</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Privacy Policy</Text>
-          <Text style={styles.menuItemArrow}>›</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>Terms of Service</Text>
-          <Text style={styles.menuItemArrow}>›</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuItemText}>App Version</Text>
-          <Text style={styles.menuItemValue}>1.0.0</Text>
-        </TouchableOpacity>
-      </Card>
-
-      {/* Logout */}
-      <View style={styles.logoutSection}>
-        <Button
-          title="Logout"
-          onPress={handleLogout}
-          variant="danger"
-          size="lg"
-        />
+        <LinearGradient
+          colors={[theme.card, theme.elevated]}
+          style={styles.settingsCard}
+        >
+          <Pressable
+            style={({ pressed }) => [
+              styles.menuItem,
+              pressed && styles.menuItemPressed,
+            ]}
+          >
+            <View style={styles.menuItemLeft}>
+              <Text style={styles.menuItemIcon}>🔔</Text>
+              <Text style={styles.menuItemText}>Notification Settings</Text>
+            </View>
+            <Text style={styles.menuItemArrow}>›</Text>
+          </Pressable>
+          <View style={styles.menuDivider} />
+          <Pressable
+            style={({ pressed }) => [
+              styles.menuItem,
+              pressed && styles.menuItemPressed,
+            ]}
+          >
+            <View style={styles.menuItemLeft}>
+              <Text style={styles.menuItemIcon}>🔒</Text>
+              <Text style={styles.menuItemText}>Privacy Policy</Text>
+            </View>
+            <Text style={styles.menuItemArrow}>›</Text>
+          </Pressable>
+          <View style={styles.menuDivider} />
+          <Pressable
+            style={({ pressed }) => [
+              styles.menuItem,
+              pressed && styles.menuItemPressed,
+            ]}
+          >
+            <View style={styles.menuItemLeft}>
+              <Text style={styles.menuItemIcon}>📄</Text>
+              <Text style={styles.menuItemText}>Terms of Service</Text>
+            </View>
+            <Text style={styles.menuItemArrow}>›</Text>
+          </Pressable>
+          <View style={styles.menuDivider} />
+          <View style={styles.menuItem}>
+            <View style={styles.menuItemLeft}>
+              <Text style={styles.menuItemIcon}>ℹ️</Text>
+              <Text style={styles.menuItemText}>App Version</Text>
+            </View>
+            <Text style={styles.menuItemValue}>1.0.0</Text>
+          </View>
+        </LinearGradient>
       </View>
+
+      {/* Logout Button with Danger Gradient */}
+      <Pressable
+        style={({ pressed }) => [
+          styles.logoutButton,
+          pressed && styles.logoutButtonPressed,
+        ]}
+        onPress={handleLogout}
+      >
+        <LinearGradient
+          colors={[theme.danger, '#D93A33']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.logoutGradient}
+        >
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </LinearGradient>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -167,56 +299,96 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: theme.background,
   },
-  content: {
+  contentContainer: {
     padding: spacing.md,
-    paddingBottom: spacing.xxl,
+    paddingBottom: 120,
   },
-  headerCard: {
+  headerGradient: {
+    borderRadius: 20,
+    padding: spacing.xl,
     alignItems: 'center',
-    paddingVertical: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  avatarContainer: {
     marginBottom: spacing.md,
+  },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  avatarEditIcon: {
+    fontSize: 14,
   },
   name: {
     fontSize: fontSize.xxl,
-    fontWeight: '700',
-    color: colors.text,
+    fontWeight: '800',
+    color: colors.white,
     marginTop: spacing.md,
+    letterSpacing: -0.5,
   },
   email: {
     fontSize: fontSize.md,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.75)',
     marginTop: spacing.xs,
   },
-  roleBadge: {
+  roleBadgeContainer: {
     marginTop: spacing.md,
   },
   section: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
     fontSize: fontSize.lg,
-    fontWeight: '600',
-    color: colors.text,
+    fontWeight: '700',
+    color: theme.textPrimary,
     marginBottom: spacing.md,
+    letterSpacing: -0.3,
+  },
+  detailsCard: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  detailRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+  },
+  detailLabelContainer: {
+    flex: 1,
   },
   detailLabel: {
     fontSize: fontSize.md,
-    color: colors.textSecondary,
+    color: theme.textSecondary,
   },
   detailValue: {
     fontSize: fontSize.md,
-    fontWeight: '600',
-    color: colors.text,
+    fontWeight: '700',
+    color: theme.textPrimary,
+    textAlign: 'right',
   },
   subjectsGrid: {
     flexDirection: 'row',
@@ -224,37 +396,84 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   subjectChip: {
-    backgroundColor: colors.primaryLight + '20',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
+    borderRadius: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.border,
+    minWidth: 100,
+  },
+  subjectCode: {
+    fontSize: fontSize.sm,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   subjectName: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.primary,
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+    marginTop: 2,
+    maxWidth: 100,
+  },
+  settingsCard: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.border,
   },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingHorizontal: spacing.md,
+  },
+  menuItemPressed: {
+    opacity: 0.7,
+    backgroundColor: theme.elevated,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  menuItemIcon: {
+    fontSize: 18,
   },
   menuItemText: {
     fontSize: fontSize.md,
-    color: colors.text,
+    color: theme.textPrimary,
   },
   menuItemArrow: {
     fontSize: fontSize.xl,
-    color: colors.textSecondary,
+    color: theme.textSecondary,
   },
   menuItemValue: {
     fontSize: fontSize.md,
-    color: colors.textSecondary,
+    color: theme.textSecondary,
   },
-  logoutSection: {
+  menuDivider: {
+    height: 1,
+    backgroundColor: theme.border,
+    marginLeft: 52,
+  },
+  logoutButton: {
     marginTop: spacing.lg,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  logoutButtonPressed: {
+    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
+  },
+  logoutGradient: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: fontSize.md,
+    letterSpacing: 0.5,
   },
 });

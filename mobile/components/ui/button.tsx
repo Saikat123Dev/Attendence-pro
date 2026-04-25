@@ -1,5 +1,5 @@
 /**
- * Reusable Button Component - Android Material Design style
+ * Reusable Button Component - AttendX Dark Pro Theme
  */
 import React from 'react';
 import {
@@ -9,7 +9,9 @@ import {
   ActivityIndicator,
   ViewStyle,
   TextStyle,
+  Animated,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, borderRadius, spacing, fontSize } from '../../constants/theme';
 
 interface ButtonProps {
@@ -36,52 +38,36 @@ export function Button({
   icon,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const scaleValue = React.useRef(new Animated.Value(1)).current;
 
-  const getVariantStyle = () => {
-    switch (variant) {
-      case 'primary':
-        return { backgroundColor: isDisabled ? colors.gray400 : colors.primary };
-      case 'secondary':
-        return { backgroundColor: isDisabled ? colors.gray200 : colors.secondary };
-      case 'outline':
-        return {
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          borderColor: isDisabled ? colors.gray400 : colors.primary,
-        };
-      case 'ghost':
-        return { backgroundColor: 'transparent' };
-      case 'danger':
-        return { backgroundColor: isDisabled ? colors.gray400 : colors.danger };
-      default:
-        return { backgroundColor: colors.primary };
-    }
+  const handlePressIn = () => {
+    Animated.spring(scaleValue, {
+      toValue: 0.96,
+      useNativeDriver: true,
+    }).start();
   };
 
-  const getTextColor = () => {
-    switch (variant) {
-      case 'outline':
-      case 'ghost':
-        return isDisabled ? colors.gray400 : colors.primary;
-      default:
-        return colors.white;
-    }
+  const handlePressOut = () => {
+    Animated.spring(scaleValue, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
   };
 
-  const getSizeStyle = () => {
+  const getSizeStyle = (): ViewStyle => {
     switch (size) {
       case 'sm':
-        return { paddingVertical: spacing.sm, paddingHorizontal: spacing.md };
+        return { minHeight: 36, paddingHorizontal: spacing.lg };
       case 'md':
-        return { paddingVertical: spacing.md, paddingHorizontal: spacing.lg };
+        return { minHeight: 44, paddingHorizontal: spacing.xl };
       case 'lg':
-        return { paddingVertical: spacing.lg, paddingHorizontal: spacing.xl };
+        return { minHeight: 52, paddingHorizontal: spacing.xxl };
       default:
-        return { paddingVertical: spacing.md, paddingHorizontal: spacing.lg };
+        return { minHeight: 44, paddingHorizontal: spacing.xl };
     }
   };
 
-  const getFontSize = () => {
+  const getFontSize = (): number => {
     switch (size) {
       case 'sm':
         return fontSize.sm;
@@ -94,49 +80,164 @@ export function Button({
     }
   };
 
-  return (
-    <TouchableOpacity
-      style={[
-        styles.button,
-        getVariantStyle(),
-        getSizeStyle(),
-        style,
-      ]}
-      onPress={onPress}
-      disabled={isDisabled}
-      activeOpacity={0.8}
-    >
-      {loading ? (
-        <ActivityIndicator color={getTextColor()} size="small" />
-      ) : (
-        <>
-          {icon}
-          <Text
-            style={[
-              styles.text,
-              { color: getTextColor(), fontSize: getFontSize() },
-              icon ? { marginLeft: spacing.sm } : {},
-              textStyle,
-            ]}
+  const renderContent = () => {
+    if (loading) {
+      return <ActivityIndicator color="#FFFFFF" size="small" />;
+    }
+
+    return (
+      <>
+        {icon}
+        <Text
+          style={[
+            styles.text,
+            { color: '#FFFFFF', fontSize: getFontSize() },
+            icon ? { marginLeft: spacing.sm } : {},
+            textStyle,
+          ]}
+        >
+          {title}
+        </Text>
+      </>
+    );
+  };
+
+  if (variant === 'primary') {
+    return (
+      <Animated.View style={[styles.animatedContainer, { transform: [{ scale: scaleValue }] }]}>
+        <TouchableOpacity
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          disabled={isDisabled}
+          activeOpacity={0.9}
+          style={isDisabled ? styles.disabledOpacity : undefined}
+        >
+          <LinearGradient
+            colors={isDisabled ? ['#4F6EF780', '#7C3AED80'] : ['#4F6EF7', '#7C3AED']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.gradient, getSizeStyle()]}
           >
-            {title}
-          </Text>
-        </>
-      )}
-    </TouchableOpacity>
+            {renderContent()}
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }
+
+  if (variant === 'ghost') {
+    return (
+      <Animated.View style={[styles.animatedContainer, { transform: [{ scale: scaleValue }] }]}>
+        <TouchableOpacity
+          style={[styles.button, styles.ghost, getSizeStyle(), isDisabled && styles.disabledOpacity]}
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          disabled={isDisabled}
+          activeOpacity={0.9}
+        >
+          {renderContent()}
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }
+
+  if (variant === 'danger') {
+    return (
+      <Animated.View style={[styles.animatedContainer, { transform: [{ scale: scaleValue }] }]}>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.danger,
+            getSizeStyle(),
+            isDisabled && styles.disabledOpacity,
+          ]}
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          disabled={isDisabled}
+          activeOpacity={0.9}
+        >
+          {renderContent()}
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }
+
+  if (variant === 'outline') {
+    return (
+      <Animated.View style={[styles.animatedContainer, { transform: [{ scale: scaleValue }] }]}>
+        <TouchableOpacity
+          style={[styles.button, styles.outline, getSizeStyle(), isDisabled && styles.disabledOpacity]}
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          disabled={isDisabled}
+          activeOpacity={0.9}
+        >
+          {renderContent()}
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }
+
+  return (
+    <Animated.View style={[styles.animatedContainer, { transform: [{ scale: scaleValue }] }]}>
+      <TouchableOpacity
+        style={[styles.button, styles.secondary, getSizeStyle(), isDisabled && styles.disabledOpacity]}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={isDisabled}
+        activeOpacity={0.9}
+      >
+        {renderContent()}
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  animatedContainer: {
+    borderRadius: 14,
+  },
+  gradient: {
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: borderRadius.md,
-    minHeight: 48,
+    borderRadius: 14,
+  },
+  ghost: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#252B42',
+  },
+  danger: {
+    backgroundColor: '#EF444420',
+    borderWidth: 1,
+    borderColor: '#EF444430',
+  },
+  outline: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#4F6EF7',
+  },
+  secondary: {
+    backgroundColor: colors.surfaceElevated,
+  },
+  disabledOpacity: {
+    opacity: 0.5,
   },
   text: {
     fontWeight: '600',
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
 });

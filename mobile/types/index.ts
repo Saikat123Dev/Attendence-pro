@@ -4,6 +4,7 @@ export type UserRole = 'TEACHER' | 'STUDENT';
 export interface User {
   _id: string;
   email: string;
+  name: string;
   role: UserRole;
   isActive: boolean;
   createdAt: string;

@@ -9,13 +9,39 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import { Link } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
+import { colors, spacing, fontSize, borderRadius, shadows } from '@/constants/theme';
+
+// Theme colors
+const theme = {
+  bg: {
+    base: '#0A0D14',
+    card: '#141828',
+  },
+  primary: '#4F6EF7',
+  accent: '#7B93FC',
+  text: {
+    primary: '#F0F2FF',
+    secondary: '#C0C5E0',
+    muted: '#6B7194',
+  },
+  border: '#1E2235',
+  danger: '#FF5A5A',
+  success: '#4ADE80',
+};
+
+const PRIMARY_GRADIENT = ['#4F6EF7', '#7B93FC'] as const;
 
 export default function RegisterScreen() {
-  const { register, isLoading, error, clearError } = useAuth();
-
+  const { register, isLoading: authLoading, error, clearError } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -29,15 +55,17 @@ export default function RegisterScreen() {
   };
 
   async function handleRegister() {
+    setIsLoading(true);
     try {
       await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
       });
-      // Navigation to complete-profile is handled by AuthContext
     } catch (err) {
-      // Handled by context
+      // Error handled by context
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -48,106 +76,195 @@ export default function RegisterScreen() {
     return true;
   };
 
+  const passwordError = formData.password && formData.password.length < 6
+    ? 'Password must be at least 6 characters'
+    : null;
+
+  const confirmPasswordError = formData.confirmPassword && formData.password !== formData.confirmPassword
+    ? 'Passwords do not match'
+    : null;
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join Smart Attendance</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Logo Section */}
+        <View style={styles.logoContainer}>
+          <View style={styles.logoWrapper}>
+            {/* Glow effect behind logo */}
+            <View style={styles.logoGlow} />
+            <View style={styles.logoIcon}>
+              <Text style={styles.logoText}>AX</Text>
+            </View>
+          </View>
         </View>
 
-        <View style={styles.form}>
+        {/* Header Section */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Join AttendX today</Text>
+        </View>
+
+        {/* Form Card */}
+        <View style={styles.formCard}>
           {error && (
             <View style={styles.errorContainer}>
+              <View style={styles.errorIndicator} />
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity onPress={clearError}>
+              <TouchableOpacity onPress={clearError} style={styles.dismissButton}>
                 <Text style={styles.dismissText}>Dismiss</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* Name Field */}
-          <View style={styles.inputContainer}>
+          {/* Name Input */}
+          <View style={styles.inputGroup}>
             <Text style={styles.label}>Full Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your name"
-              placeholderTextColor="#999"
-              value={formData.name}
-              onChangeText={(v) => updateField('name', v)}
-              editable={!isLoading}
-            />
+            <View style={[styles.inputWrapper, !formData.name && styles.inputWrapperEmpty]}>
+              <View style={styles.inputIcon}>
+                <Text style={styles.iconUser}>U</Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your name"
+                placeholderTextColor={theme.text.muted}
+                value={formData.name}
+                onChangeText={(v) => updateField('name', v)}
+                editable={!isLoading}
+              />
+            </View>
           </View>
 
-          {/* Email Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor="#999"
-              value={formData.email}
-              onChangeText={(v) => updateField('email', v)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
-            />
+          {/* Email Input */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email Address</Text>
+            <View style={[styles.inputWrapper, !formData.email && styles.inputWrapperEmpty]}>
+              <View style={styles.inputIcon}>
+                <Text style={styles.iconEnvelope}>✉</Text>
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor={theme.text.muted}
+                value={formData.email}
+                onChangeText={(v) => updateField('email', v)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isLoading}
+              />
+            </View>
           </View>
 
-          {/* Password Field */}
-          <View style={styles.inputContainer}>
+          {/* Password Input */}
+          <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Min 6 characters"
-              placeholderTextColor="#999"
-              value={formData.password}
-              onChangeText={(v) => updateField('password', v)}
-              secureTextEntry
-              autoCapitalize="none"
-              editable={!isLoading}
-            />
-          </View>
-
-          {/* Confirm Password Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm your password"
-              placeholderTextColor="#999"
-              value={formData.confirmPassword}
-              onChangeText={(v) => updateField('confirmPassword', v)}
-              secureTextEntry
-              autoCapitalize="none"
-              editable={!isLoading}
-            />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.button, !isFormValid() && styles.buttonDisabled]}
-            onPress={handleRegister}
-            disabled={!isFormValid() || isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Create Account</Text>
+            <View style={[styles.inputWrapper, !formData.password && styles.inputWrapperEmpty]}>
+              <View style={styles.inputIcon}>
+                <Text style={styles.iconLock}>✕</Text>
+              </View>
+              <TextInput
+                style={[styles.input, styles.passwordInput]}
+                placeholder="Min 6 characters"
+                placeholderTextColor={theme.text.muted}
+                value={formData.password}
+                onChangeText={(v) => updateField('password', v)}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                editable={!isLoading}
+              />
+              <Pressable
+                style={styles.showPassword}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Text style={[styles.showPasswordText, showPassword && styles.showPasswordActive]}>
+                  {showPassword ? 'Hide' : 'Show'}
+                </Text>
+              </Pressable>
+            </View>
+            {passwordError && (
+              <View style={styles.fieldErrorContainer}>
+                <Text style={styles.fieldError}>{passwordError}</Text>
+              </View>
             )}
-          </TouchableOpacity>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account?</Text>
-            <Link href="/(auth)/login" asChild>
-              <TouchableOpacity>
-                <Text style={styles.linkText}>Sign In</Text>
-              </TouchableOpacity>
-            </Link>
           </View>
+
+          {/* Confirm Password Input */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <View style={[styles.inputWrapper, !formData.confirmPassword && styles.inputWrapperEmpty]}>
+              <View style={styles.inputIcon}>
+                <Text style={styles.iconLock}>✕</Text>
+              </View>
+              <TextInput
+                style={[styles.input, styles.passwordInput]}
+                placeholder="Confirm your password"
+                placeholderTextColor={theme.text.muted}
+                value={formData.confirmPassword}
+                onChangeText={(v) => updateField('confirmPassword', v)}
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+                editable={!isLoading}
+              />
+              <Pressable
+                style={styles.showPassword}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                <Text style={[styles.showPasswordText, showConfirmPassword && styles.showPasswordActive]}>
+                  {showConfirmPassword ? 'Hide' : 'Show'}
+                </Text>
+              </Pressable>
+            </View>
+            {confirmPasswordError && (
+              <View style={styles.fieldErrorContainer}>
+                <Text style={styles.fieldError}>{confirmPasswordError}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Create Account Button */}
+          <Pressable
+            onPress={handleRegister}
+            onPressIn={() => setIsPressed(true)}
+            onPressOut={() => setIsPressed(false)}
+            disabled={!isFormValid() || isLoading}
+            style={styles.buttonPressable}
+          >
+            <LinearGradient
+              colors={!isFormValid() || isLoading ? ['#2A3A5C', '#3A4A6C'] : PRIMARY_GRADIENT}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[
+                styles.button,
+                isPressed && styles.buttonPressed,
+              ]}
+            >
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <Text style={styles.loadingText}>Creating account...</Text>
+                </View>
+              ) : (
+                <Text style={styles.buttonText}>Create Account</Text>
+              )}
+            </LinearGradient>
+          </Pressable>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Already have an account?</Text>
+          <Link href="/(auth)/login" asChild>
+            <TouchableOpacity style={styles.linkButton}>
+              <Text style={styles.linkText}>Sign In</Text>
+            </TouchableOpacity>
+          </Link>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -157,104 +274,234 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.bg.base,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
-    paddingTop: 60,
+    padding: spacing.lg,
+    paddingTop: spacing.xxl,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  logoWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 22,
+    backgroundColor: theme.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+    ...shadows.lg,
+  },
+  logoText: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 2,
+  },
+  logoGlow: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 32,
+    backgroundColor: 'transparent',
+    shadowColor: theme.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 30,
+    elevation: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(79, 110, 247, 0.3)',
   },
   header: {
-    marginBottom: 30,
+    alignItems: 'center',
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: 28,
+    fontSize: fontSize.xxxl,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+    color: theme.text.primary,
+    marginBottom: spacing.xs,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: fontSize.md,
+    color: theme.text.secondary,
+    textAlign: 'center',
   },
-  form: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  formCard: {
+    backgroundColor: theme.bg.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.border,
+    ...shadows.lg,
   },
   errorContainer: {
-    backgroundColor: '#fee',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    backgroundColor: 'rgba(255, 90, 90, 0.1)',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#fcc',
+    borderLeftWidth: 3,
+    borderLeftColor: theme.danger,
+  },
+  errorIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.danger,
+    marginRight: spacing.sm,
   },
   errorText: {
-    color: '#c00',
-    fontSize: 14,
+    color: theme.danger,
+    fontSize: fontSize.sm,
     flex: 1,
   },
-  dismissText: {
-    color: '#c00',
-    fontWeight: '600',
-    marginLeft: 8,
+  dismissButton: {
+    paddingLeft: spacing.sm,
   },
-  inputContainer: {
-    marginBottom: 16,
+  dismissText: {
+    color: theme.danger,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+  },
+  inputGroup: {
+    marginBottom: spacing.md,
   },
   label: {
-    fontSize: 14,
+    fontSize: fontSize.sm,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    color: theme.text.primary,
+    marginBottom: spacing.sm,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.bg.base,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  inputWrapperEmpty: {
+    borderColor: theme.border,
+  },
+  inputIcon: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: 1,
+    borderRightColor: theme.border,
+  },
+  inputIconText: {
+    fontSize: 18,
+  },
+  iconUser: {
+    fontSize: 18,
+    color: theme.primary,
+    fontWeight: '600',
+  },
+  iconEnvelope: {
+    fontSize: 18,
+    color: theme.primary,
+  },
+  iconLock: {
+    fontSize: 18,
+    color: theme.primary,
   },
   input: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    padding: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    color: '#333',
+    flex: 1,
+    backgroundColor: 'transparent',
+    padding: spacing.md,
+    fontSize: fontSize.md,
+    color: theme.text.primary,
+    height: 48,
+  },
+  passwordInput: {
+    paddingRight: 60,
+  },
+  showPassword: {
+    position: 'absolute',
+    right: spacing.md,
+    padding: spacing.sm,
+  },
+  showPasswordText: {
+    color: theme.text.secondary,
+    fontSize: fontSize.sm,
+    fontWeight: '500',
+  },
+  showPasswordActive: {
+    color: theme.primary,
+  },
+  fieldErrorContainer: {
+    marginTop: spacing.xs,
+    paddingLeft: spacing.xs,
+    borderLeftWidth: 2,
+    borderLeftColor: theme.danger,
+  },
+  fieldError: {
+    color: theme.danger,
+    fontSize: fontSize.xs,
+  },
+  buttonPressable: {
+    marginTop: spacing.sm,
   },
   button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 10,
-    padding: 16,
+    height: 52,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
+    transform: [{ scale: 1 }],
+  },
+  buttonPressed: {
+    transform: [{ scale: 0.97 }],
   },
   buttonDisabled: {
-    opacity: 0.5,
+    backgroundColor: '#2A3A5C',
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: fontSize.lg,
     fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    marginLeft: spacing.sm,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: spacing.xl,
   },
   footerText: {
-    color: '#666',
-    fontSize: 14,
+    color: theme.text.secondary,
+    fontSize: fontSize.sm,
+  },
+  linkButton: {
+    marginLeft: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
   linkText: {
-    color: '#007AFF',
-    fontSize: 14,
+    color: theme.primary,
+    fontSize: fontSize.sm,
     fontWeight: '600',
-    marginLeft: 4,
   },
 });

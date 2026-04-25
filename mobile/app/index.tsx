@@ -1,6 +1,7 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { colors } from '@/constants/theme';
 
 export default function RootIndex() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -32,6 +33,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
 });

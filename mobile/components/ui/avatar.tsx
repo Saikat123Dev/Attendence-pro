@@ -1,15 +1,16 @@
 /**
- * Reusable Avatar Component
+ * Reusable Avatar Component - AttendX Dark Pro Theme
  */
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, borderRadius } from '../../constants/theme';
+import { colors } from '../../constants/theme';
 
 interface AvatarProps {
   name: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
   style?: ViewStyle;
   source?: string;
+  type?: 'teacher' | 'student';
 }
 
 function getInitials(name: string): string {
@@ -23,13 +24,15 @@ function getInitials(name: string): string {
 
 function getColorFromName(name: string): string {
   const colorOptions = [
-    '#2563EB', // Blue
-    '#7C3AED', // Violet
-    '#0891B2', // Cyan
-    '#059669', // Emerald
-    '#D97706', // Amber
-    '#DC2626', // Red
-    '#DB2777', // Pink
+    '#4F6EF7',
+    '#7C3AED',
+    '#0891B2',
+    '#10B981',
+    '#F59E0B',
+    '#EF4444',
+    '#EC4899',
+    '#6366F1',
+    '#8B5CF6',
   ];
 
   let hash = 0;
@@ -39,23 +42,33 @@ function getColorFromName(name: string): string {
   return colorOptions[Math.abs(hash) % colorOptions.length];
 }
 
-export function Avatar({ name, size = 'md', style }: AvatarProps) {
+export function Avatar({ name, size = 'md', style, type = 'student' }: AvatarProps) {
   const getSizeStyle = () => {
     switch (size) {
       case 'sm':
-        return { width: 32, height: 32, fontSize: 12 };
+        return { width: 32, height: 32, fontSize: 11 };
       case 'md':
-        return { width: 48, height: 48, fontSize: 18 };
+        return { width: 48, height: 48, fontSize: 16 };
       case 'lg':
-        return { width: 64, height: 64, fontSize: 24 };
+        return { width: 64, height: 64, fontSize: 22 };
       case 'xl':
-        return { width: 80, height: 80, fontSize: 32 };
+        return { width: 96, height: 96, fontSize: 32 };
+      case 'xxl':
+        return { width: 120, height: 120, fontSize: 40 };
       default:
-        return { width: 48, height: 48, fontSize: 18 };
+        return { width: 48, height: 48, fontSize: 16 };
     }
   };
 
+  const getTypeColors = () => {
+    if (type === 'teacher') {
+      return { bg: '#7C3AED20', border: '#7C3AED50' };
+    }
+    return { bg: '#4F6EF720', border: '#4F6EF750' };
+  };
+
   const sizeStyle = getSizeStyle();
+  const typeColors = getTypeColors();
   const backgroundColor = getColorFromName(name);
 
   return (
@@ -66,6 +79,8 @@ export function Avatar({ name, size = 'md', style }: AvatarProps) {
           width: sizeStyle.width,
           height: sizeStyle.height,
           backgroundColor,
+          borderColor: typeColors.border,
+          borderWidth: 2,
         },
         style,
       ]}
@@ -79,12 +94,13 @@ export function Avatar({ name, size = 'md', style }: AvatarProps) {
 
 const styles = StyleSheet.create({
   avatar: {
-    borderRadius: borderRadius.full,
+    borderRadius: 9999,
     justifyContent: 'center',
     alignItems: 'center',
   },
   text: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

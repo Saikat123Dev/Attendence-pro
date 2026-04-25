@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 
 class UpdateService {
   private isChecking = false;
-  private updateListener: any = null;
 
   async initialize() {
     if (__DEV__) {
@@ -12,12 +11,10 @@ class UpdateService {
     }
 
     try {
-      // Check for available updates
-      const update = await Updates.checkAsync();
-
+      const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {
         console.log('[UpdateService] Update available, downloading...');
-        await Updates.fetchAsync();
+        await Updates.fetchUpdateAsync();
         console.log('[UpdateService] Update downloaded, will apply on next launch');
       }
     } catch (error) {
@@ -33,14 +30,12 @@ class UpdateService {
     this.isChecking = true;
 
     try {
-      const update = await Updates.checkAsync();
-
+      const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {
-        console.log(`[UpdateService] Update ${update.version} available`);
-        await Updates.fetchAsync();
-        return { available: true, version: update.version };
+        console.log('[UpdateService] Update available');
+        await Updates.fetchUpdateAsync();
+        return { available: true };
       }
-
       return { available: false };
     } catch (error) {
       console.error('[UpdateService] Check failed:', error);
@@ -54,14 +49,12 @@ class UpdateService {
     if (__DEV__) return false;
 
     try {
-      const update = await Updates.checkAsync();
-
+      const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {
-        await Updates.fetchAsync();
+        await Updates.fetchUpdateAsync();
         await Updates.reloadAsync();
         return true;
       }
-
       return false;
     } catch (error) {
       console.error('[UpdateService] Download failed:', error);
@@ -71,25 +64,11 @@ class UpdateService {
 
   setupAutoUpdate() {
     if (__DEV__) return;
-
-    this.updateListener = Updates.addListener((event) => {
-      console.log('[UpdateService] Update event:', event.action);
-
-      if (event.action === Updates.UpdateEventAction.UPDATE_AVAILABLE) {
-        console.log('[UpdateService] New update ready');
-      }
-
-      if (event.action === Updates.UpdateEventAction.ERROR) {
-        console.error('[UpdateService] Update error:', event.message);
-      }
-    });
+    // Auto-update is handled by expo-updates automatically in production
   }
 
   cleanup() {
-    if (this.updateListener) {
-      this.updateListener.remove();
-      this.updateListener = null;
-    }
+    // No listener to clean up with new API
   }
 
   async getUpdateInfo() {
@@ -101,14 +80,20 @@ class UpdateService {
       };
     }
 
-    const update = await Updates.readableUpdatesInfo();
-    const channel = await Updates.getAdditionalUserPropertiesAsync();
-
-    return {
-      isDev: false,
-      version: update.manifest.version,
-      channel: 'production', // or from update.manifest.extra if configured
-    };
+    try {
+      const update = await Updates.checkForUpdateAsync();
+      return {
+        isDev: false,
+        version: 'latest',
+        channel: 'production',
+      };
+    } catch {
+      return {
+        isDev: false,
+        version: 'unknown',
+        channel: 'production',
+      };
+    }
   }
 }
 

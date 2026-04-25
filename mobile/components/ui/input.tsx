@@ -1,5 +1,5 @@
 /**
- * Reusable Input Component - Android Material Design style
+ * Reusable Input Component - AttendX Dark Pro Theme
  */
 import React, { useState } from 'react';
 import {
@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   TextInputProps,
 } from 'react-native';
-import { colors, borderRadius, spacing, fontSize } from '../../constants/theme';
+import { colors, spacing, fontSize } from '../../constants/theme';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -33,10 +33,10 @@ export function Input({
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
 
-  const getBorderColor = () => {
-    if (error) return colors.danger;
-    if (isFocused) return colors.primary;
-    return colors.border;
+  const getBorderColor = (): string => {
+    if (error) return '#EF4444';
+    if (isFocused) return '#4F6EF7';
+    return '#1E2235';
   };
 
   return (
@@ -46,15 +46,15 @@ export function Input({
       <View
         style={[
           styles.inputContainer,
-          { borderColor: getBorderColor() },
-          isFocused && styles.focused,
+          { borderColor: getBorderColor(), borderWidth: isFocused ? 2 : 1.5 },
+          error && styles.errorBorder,
         ]}
       >
         {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
 
         <TextInput
-          style={[styles.input, leftIcon ? { paddingLeft: 0 } : {}, style]}
-          placeholderTextColor={colors.placeholder}
+          style={[styles.input, leftIcon ? styles.inputWithLeftIcon : null, style]}
+          placeholderTextColor="#4A5280"
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           {...props}
@@ -84,26 +84,30 @@ const styles = StyleSheet.create({
   label: {
     fontSize: fontSize.sm,
     fontWeight: '600',
-    color: colors.text,
+    color: '#8E8E93',
     marginBottom: spacing.xs,
+    letterSpacing: 0.2,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderRadius: borderRadius.md,
+    backgroundColor: '#1A2035',
+    borderRadius: 14,
     minHeight: 52,
   },
-  focused: {
+  errorBorder: {
     borderWidth: 2,
+    borderColor: '#EF4444',
   },
   input: {
     flex: 1,
     fontSize: fontSize.md,
-    color: colors.text,
+    color: '#F0F2FF',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  inputWithLeftIcon: {
+    paddingLeft: spacing.xs,
   },
   leftIcon: {
     paddingLeft: spacing.md,
@@ -113,12 +117,13 @@ const styles = StyleSheet.create({
   },
   error: {
     fontSize: fontSize.xs,
-    color: colors.danger,
+    color: '#EF4444',
     marginTop: spacing.xs,
+    fontWeight: '500',
   },
   hint: {
     fontSize: fontSize.xs,
-    color: colors.textSecondary,
+    color: '#5C5C5C',
     marginTop: spacing.xs,
   },
 });

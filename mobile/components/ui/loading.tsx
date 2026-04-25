@@ -1,5 +1,5 @@
 /**
- * Reusable Loading Component
+ * Reusable Loading Component - AttendX Dark Pro Theme
  */
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
@@ -12,10 +12,12 @@ interface LoadingProps {
   style?: ViewStyle;
 }
 
-export function Loading({ message, size = 'large', color = colors.primary, style }: LoadingProps) {
+export function Loading({ message, size = 'large', color = '#4F6EF7', style }: LoadingProps) {
   return (
     <View style={[styles.container, style]}>
-      <ActivityIndicator size={size} color={color} />
+      <View style={styles.indicatorContainer}>
+        <ActivityIndicator size={size} color={color} />
+      </View>
       {message && <Text style={styles.message}>{message}</Text>}
     </View>
   );
@@ -26,12 +28,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#0D0D0D',
     padding: spacing.xxl,
+  },
+  indicatorContainer: {
+    backgroundColor: '#1A2035',
+    borderRadius: 40,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#1E2235',
   },
   message: {
     fontSize: fontSize.md,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
+    color: '#8E8E93',
+    marginTop: spacing.lg,
     textAlign: 'center',
+    letterSpacing: 0.2,
   },
 });

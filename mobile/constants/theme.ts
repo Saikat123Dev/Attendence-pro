@@ -1,106 +1,137 @@
 /**
- * Smart Attendance System - Android-optimized Color Palette
- * Material Design 3 inspired theme
+ * Smart Attendance System - Dark Theme
+ * Comprehensive dark theme constants for consistent UI design
  */
 
-import { Platform } from 'react-native';
+// =============================================================================
+// COLORS
+// =============================================================================
 
-// Flat color palette - no nesting for easier imports
 export const colors = {
-  // Primary brand colors
-  primary: '#2563EB',
-  primaryDark: '#1D4ED8',
-  primaryLight: '#3B82F6',
+  // Backgrounds
+  background: '#0D0D0D',
+  surface: '#1A1A1A',
+  surfaceElevated: '#242424',
+  surfaceHighlight: '#2D2D2D',
 
-  // Secondary colors
-  secondary: '#10B981',
-  warning: '#F59E0B',
-  danger: '#EF4444',
+  // Borders
+  border: '#333333',
+  borderLight: '#3A3A3C',
 
-  // Neutral colors
-  white: '#FFFFFF',
-  black: '#000000',
-  gray50: '#F9FAFB',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray300: '#D1D5DB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  gray600: '#4B5563',
-  gray700: '#374151',
-  gray800: '#1F2937',
-  gray900: '#111827',
+  // Primary
+  primary: '#4A9EFF',
+  primaryPressed: '#3A8AE8',
+  primaryLight: '#4A9EFF20',
 
-  // Semantic colors
-  text: '#111827',
-  textSecondary: '#6B7280',
-  textLight: '#9CA3AF',
-  background: '#F3F4F6',
-  surface: '#FFFFFF',
-  border: '#E5E7EB',
-  placeholder: '#9CA3AF',
-  disabled: '#D1D5DB',
+  // Text
+  text: '#FFFFFF',
+  textSecondary: '#8E8E93',
+  textMuted: '#5C5C5C',
+  placeholder: '#636366',
 
   // Status
-  success: '#10B981',
-  error: '#EF4444',
-  info: '#3B82F6',
+  success: '#30D158',
+  successLight: '#30D15820',
+  warning: '#FFD60A',
+  warningLight: '#FFD60A20',
+  error: '#FF453A',
+  errorLight: '#FF453A20',
+  info: '#4A9EFF',
+  infoLight: '#4A9EFF20',
+
+  // Other
+  white: '#FFFFFF',
+  black: '#000000',
+  transparent: 'transparent',
+
+  // Shadows
+  shadowColor: '#000000',
 };
 
-// Backwards compatibility alias
+// Backwards compatibility
 export const Colors = {
   light: colors,
-  dark: {
-    ...colors,
-    text: '#F9FAFB',
-    textSecondary: '#9CA3AF',
-    background: '#111827',
-    surface: '#1F2937',
-    border: '#374151',
-  },
+  dark: colors,
 };
 
-// Shadows for elevation (Android)
-export const shadows = {
-  sm: Platform.select({
-    android: { elevation: 2 },
-    default: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 },
-  }),
-  md: Platform.select({
-    android: { elevation: 4 },
-    default: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-  }),
-  lg: Platform.select({
-    android: { elevation: 8 },
-    default: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 },
-  }),
-};
+// =============================================================================
+// SPACING
+// =============================================================================
 
 export const spacing = {
   xs: 4,
   sm: 8,
-  md: 16,
-  lg: 20,
-  xl: 24,
-  xxl: 32,
-};
-
-export const borderRadius = {
-  sm: 6,
-  md: 10,
+  md: 12,
   lg: 16,
-  xl: 24,
-  full: 9999,
-};
-
-export const fontSize = {
-  xs: 12,
-  sm: 14,
-  md: 16,
-  lg: 18,
   xl: 20,
   xxl: 24,
   xxxl: 32,
 };
+
+// =============================================================================
+// FONT SIZES
+// =============================================================================
+
+export const fontSize = {
+  xs: 10,
+  sm: 12,
+  md: 14,
+  lg: 16,
+  xl: 18,
+  xxl: 24,
+  xxxl: 32,
+  display: 40,
+};
+
+// =============================================================================
+// BORDER RADIUS
+// =============================================================================
+
+export const borderRadius = {
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 18,
+  full: 9999,
+};
+
+// =============================================================================
+// SHADOWS
+// =============================================================================
+
+export const shadows = {
+  sm: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  md: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  xl: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+};
+
+// =============================================================================
+// DEFAULT EXPORT
+// =============================================================================
 
 export default { colors, shadows, spacing, borderRadius, fontSize };
