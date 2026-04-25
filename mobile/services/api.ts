@@ -139,6 +139,11 @@ class ApiService {
     return response.data;
   }
 
+  async completeProfile(data: Record<string, unknown>) {
+    const response = await this.api.post('/auth/complete-profile', data);
+    return response.data;
+  }
+
   // ============ Attendance Endpoints ============
 
   async startSession(subjectId: string) {

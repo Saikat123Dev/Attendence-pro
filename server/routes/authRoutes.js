@@ -43,4 +43,11 @@ router.post('/logout', authController.logout);
  */
 router.get('/me', authenticate, authController.me);
 
+/**
+ * @route   POST /api/auth/complete-profile
+ * @desc    Complete user profile after registration (set role)
+ * @access  Private
+ */
+router.post('/complete-profile', authenticate, validate(schemas.completeProfile), authController.completeProfile);
+
 module.exports = router;

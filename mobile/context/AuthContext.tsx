@@ -49,6 +49,7 @@ interface AuthContextType extends AuthState {
   register: (data: any) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -79,6 +80,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  function navigateAfterAuth() {
+    // If authenticated but no role, go to complete-profile
+    // Otherwise go to tabs
+    const currentUser = state.user;
+    if (currentUser && !currentUser.role) {
+      router.replace('/(auth)/complete-profile');
+    } else {
+      router.replace('/(tabs)');
+    }
+  }
+
   async function login(email: string, password: string) {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -91,8 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       dispatch({ type: 'SET_USER', payload: response.user });
 
-      // Navigate to main app after successful login
-      router.replace('/(tabs)');
+      navigateAfterAuth();
     } catch (error: any) {
       const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
       dispatch({ type: 'SET_ERROR', payload: message });
@@ -112,8 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       dispatch({ type: 'SET_USER', payload: response.user });
 
-      // Navigate to main app after successful registration
-      router.replace('/(tabs)');
+      // After registration, always go to complete-profile to set role
+      router.replace('/(auth)/complete-profile');
     } catch (error: any) {
       const message = error.response?.data?.message || 'Registration failed. Please try again.';
       dispatch({ type: 'SET_ERROR', payload: message });
@@ -126,13 +137,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiService.logout();
     } finally {
       dispatch({ type: 'LOGOUT' });
-      // Navigate back to login after logout
       router.replace('/(auth)/login');
     }
   }
 
   function clearError() {
     dispatch({ type: 'SET_ERROR', payload: null });
+  }
+
+  function setUser(user: User | null) {
+    dispatch({ type: 'SET_USER', payload: user });
   }
 
   return (
@@ -143,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         clearError,
+        setUser,
       }}
     >
       {children}

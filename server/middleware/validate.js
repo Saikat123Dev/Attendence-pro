@@ -33,8 +33,11 @@ const schemas = {
   register: Joi.object({
     email: Joi.string().email().required(),
     password: Joi.string().min(6).required(),
-    role: Joi.string().valid('TEACHER', 'STUDENT').required(),
     name: Joi.string().min(2).max(100).required(),
+  }),
+
+  completeProfile: Joi.object({
+    role: Joi.string().valid('TEACHER', 'STUDENT').required(),
     // Teacher specific
     employeeId: Joi.string().when('role', {
       is: 'TEACHER',

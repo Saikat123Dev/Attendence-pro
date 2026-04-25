@@ -87,10 +87,24 @@ async function me(req, res, next) {
   }
 }
 
+/**
+ * Complete user profile (set role)
+ * POST /api/auth/complete-profile
+ */
+async function completeProfile(req, res, next) {
+  try {
+    const result = await authService.completeProfile(req.user.sub, req.body);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   register,
   login,
   refresh,
   logout,
   me,
+  completeProfile,
 };

@@ -12,25 +12,15 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
-import { UserRole } from '@/types';
 
 export default function RegisterScreen() {
   const { register, isLoading, error, clearError } = useAuth();
 
-  const [role, setRole] = useState<UserRole | null>(null);
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    name: '',
-    // Teacher
-    employeeId: '',
-    department: '',
-    // Student
-    rollNumber: '',
-    registrationNumber: '',
-    branch: '',
-    semester: '',
   });
 
   const updateField = (field: string, value: string) => {
@@ -39,47 +29,23 @@ export default function RegisterScreen() {
   };
 
   async function handleRegister() {
-    if (!role) return;
-
-    const data: any = {
-      email: formData.email,
-      password: formData.password,
-      role,
-      name: formData.name,
-    };
-
-    if (role === 'TEACHER') {
-      data.employeeId = formData.employeeId;
-      data.department = formData.department;
-    } else {
-      data.rollNumber = formData.rollNumber;
-      data.registrationNumber = formData.registrationNumber;
-      data.branch = formData.branch;
-      data.semester = parseInt(formData.semester, 10);
-    }
-
     try {
-      await register(data);
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
+      // Navigation to complete-profile is handled by AuthContext
     } catch (err) {
       // Handled by context
     }
   }
 
   const isFormValid = () => {
-    if (!role || !formData.email || !formData.password || !formData.name) return false;
+    if (!formData.name || !formData.email || !formData.password) return false;
     if (formData.password !== formData.confirmPassword) return false;
     if (formData.password.length < 6) return false;
-
-    if (role === 'TEACHER') {
-      return formData.employeeId && formData.department;
-    } else {
-      return (
-        formData.rollNumber &&
-        formData.registrationNumber &&
-        formData.branch &&
-        formData.semester
-      );
-    }
+    return true;
   };
 
   return (
@@ -103,40 +69,7 @@ export default function RegisterScreen() {
             </View>
           )}
 
-          {/* Role Selection */}
-          <View style={styles.roleContainer}>
-            <Text style={styles.sectionTitle}>I am a...</Text>
-            <View style={styles.roleButtons}>
-              <TouchableOpacity
-                style={[styles.roleButton, role === 'TEACHER' && styles.roleButtonActive]}
-                onPress={() => setRole('TEACHER')}
-              >
-                <Text
-                  style={[
-                    styles.roleButtonText,
-                    role === 'TEACHER' && styles.roleButtonTextActive,
-                  ]}
-                >
-                  Teacher
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.roleButton, role === 'STUDENT' && styles.roleButtonActive]}
-                onPress={() => setRole('STUDENT')}
-              >
-                <Text
-                  style={[
-                    styles.roleButtonText,
-                    role === 'STUDENT' && styles.roleButtonTextActive,
-                  ]}
-                >
-                  Student
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Common Fields */}
+          {/* Name Field */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Full Name</Text>
             <TextInput
@@ -149,6 +82,7 @@ export default function RegisterScreen() {
             />
           </View>
 
+          {/* Email Field */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -164,6 +98,7 @@ export default function RegisterScreen() {
             />
           </View>
 
+          {/* Password Field */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
             <TextInput
@@ -178,6 +113,7 @@ export default function RegisterScreen() {
             />
           </View>
 
+          {/* Confirm Password Field */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Confirm Password</Text>
             <TextInput
@@ -191,94 +127,6 @@ export default function RegisterScreen() {
               editable={!isLoading}
             />
           </View>
-
-          {/* Teacher-specific Fields */}
-          {role === 'TEACHER' && (
-            <>
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Employee ID</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., EMP001"
-                  placeholderTextColor="#999"
-                  value={formData.employeeId}
-                  onChangeText={(v) => updateField('employeeId', v)}
-                  autoCapitalize="characters"
-                  editable={!isLoading}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Department</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Computer Science"
-                  placeholderTextColor="#999"
-                  value={formData.department}
-                  onChangeText={(v) => updateField('department', v)}
-                  autoCapitalize="words"
-                  editable={!isLoading}
-                />
-              </View>
-            </>
-          )}
-
-          {/* Student-specific Fields */}
-          {role === 'STUDENT' && (
-            <>
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Roll Number</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., CS2021001"
-                  placeholderTextColor="#999"
-                  value={formData.rollNumber}
-                  onChangeText={(v) => updateField('rollNumber', v)}
-                  autoCapitalize="characters"
-                  editable={!isLoading}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Registration Number</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="University registration number"
-                  placeholderTextColor="#999"
-                  value={formData.registrationNumber}
-                  onChangeText={(v) => updateField('registrationNumber', v)}
-                  autoCapitalize="characters"
-                  editable={!isLoading}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Branch</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., CSE, ECE, ME"
-                  placeholderTextColor="#999"
-                  value={formData.branch}
-                  onChangeText={(v) => updateField('branch', v)}
-                  autoCapitalize="characters"
-                  editable={!isLoading}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Semester</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="1-8"
-                  placeholderTextColor="#999"
-                  value={formData.semester}
-                  onChangeText={(v) => updateField('semester', v)}
-                  keyboardType="number-pad"
-                  editable={!isLoading}
-                />
-              </View>
-            </>
-          )}
 
           <TouchableOpacity
             style={[styles.button, !isFormValid() && styles.buttonDisabled]}
@@ -359,39 +207,6 @@ const styles = StyleSheet.create({
     color: '#c00',
     fontWeight: '600',
     marginLeft: 8,
-  },
-  roleContainer: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  roleButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  roleButton: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    alignItems: 'center',
-  },
-  roleButtonActive: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f7ff',
-  },
-  roleButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#666',
-  },
-  roleButtonTextActive: {
-    color: '#007AFF',
   },
   inputContainer: {
     marginBottom: 16,

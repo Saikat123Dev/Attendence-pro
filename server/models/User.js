@@ -16,10 +16,16 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     role: {
       type: String,
       enum: ['TEACHER', 'STUDENT'],
-      required: true,
+      required: false, // Set during complete-profile step
+      default: null,
     },
     isActive: {
       type: Boolean,

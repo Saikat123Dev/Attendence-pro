@@ -84,20 +84,51 @@ async function revokeRefreshToken(token) {
  * @returns {Object} { user, accessToken, refreshToken }
  */
 async function register(userData) {
-  const { email, password, role, name, ...roleSpecificData } = userData;
+  const { email, password, name } = userData;
 
-  // Create user
+  // Create user with only basic info - profile completed in next step
   const user = await User.create({
     email,
     password,
-    role,
+    name,
   });
+
+  // Generate tokens
+  const tokens = await generateTokens(user);
+
+  // Return user (no profile yet)
+  const fullUser = await getFullUser(user._id);
+
+  return { user: fullUser, ...tokens };
+}
+
+/**
+ * Complete user profile after registration
+ * @param {string} userId - User ID from JWT
+ * @param {Object} profileData - Role + role-specific fields
+ * @returns {Object} { user }
+ */
+async function completeProfile(userId, profileData) {
+  const { role, ...roleSpecificData } = profileData;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw Object.assign(new Error('User not found'), { status: 404, error: 'USER_NOT_FOUND' });
+  }
+
+  if (user.role) {
+    throw Object.assign(new Error('Profile already completed'), { status: 400, error: 'PROFILE_ALREADY_COMPLETE' });
+  }
+
+  // Set role on user
+  user.role = role;
+  await user.save();
 
   // Create role-specific profile
   if (role === 'STUDENT') {
     await Student.create({
       userId: user._id,
-      name,
+      name: user.name,
       rollNumber: roleSpecificData.rollNumber,
       registrationNumber: roleSpecificData.registrationNumber,
       branch: roleSpecificData.branch,
@@ -107,20 +138,15 @@ async function register(userData) {
   } else if (role === 'TEACHER') {
     await Teacher.create({
       userId: user._id,
-      name,
+      name: user.name,
       employeeId: roleSpecificData.employeeId,
       department: roleSpecificData.department,
       subjects: [],
     });
   }
 
-  // Generate tokens
-  const tokens = await generateTokens(user);
-
-  // Get full user with profile
   const fullUser = await getFullUser(user._id);
-
-  return { user: fullUser, ...tokens };
+  return { user: fullUser };
 }
 
 /**
@@ -206,6 +232,7 @@ async function getFullUser(userId) {
   return {
     _id: user._id,
     email: user.email,
+    name: user.name,
     role: user.role,
     isActive: user.isActive,
     createdAt: user.createdAt,
@@ -220,4 +247,5 @@ module.exports = {
   refresh,
   generateTokens,
   getFullUser,
+  completeProfile,
 };
