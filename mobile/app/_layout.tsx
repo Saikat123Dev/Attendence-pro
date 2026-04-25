@@ -3,16 +3,21 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useEffect } from 'react';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/context/AuthContext';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { updateService } from '@/services/updateService';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    updateService.initialize();
+    updateService.setupAutoUpdate();
+
+    return () => updateService.cleanup();
+  }, []);
 
   return (
     <SafeAreaProvider>

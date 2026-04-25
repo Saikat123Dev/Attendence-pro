@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.developerpacman123.mobile"
     },
     "web": {
       "output": "static",
@@ -38,11 +39,31 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-updates",
+        {
+          "deploymentChannel": "production",
+          "fallbackToCacheTimeout": 10,
+          "enableBackgroundFetch": true
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "44f7e89a-d36c-4281-86a4-798ee1182cc1"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/44f7e89a-d36c-4281-86a4-798ee1182cc1"
     }
   }
 }

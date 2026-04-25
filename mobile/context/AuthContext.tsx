@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { User, AuthTokens } from '../types';
 import { apiService } from '../services/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 
 interface AuthState {
   user: User | null;
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_USER', payload: null });
       }
     } catch (error: any) {
-      // Token invalid or expired
+      // Token invalid or expired — clear and redirect to login
       await apiService.clearTokens();
       dispatch({ type: 'SET_USER', payload: null });
     }
@@ -90,8 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshToken: response.refreshToken,
       });
       dispatch({ type: 'SET_USER', payload: response.user });
+
+      // Navigate to main app after successful login
+      router.replace('/(tabs)');
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed';
+      const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
       dispatch({ type: 'SET_ERROR', payload: message });
       throw error;
     }
@@ -108,8 +111,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshToken: response.refreshToken,
       });
       dispatch({ type: 'SET_USER', payload: response.user });
+
+      // Navigate to main app after successful registration
+      router.replace('/(tabs)');
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Registration failed';
+      const message = error.response?.data?.message || 'Registration failed. Please try again.';
       dispatch({ type: 'SET_ERROR', payload: message });
       throw error;
     }
@@ -120,6 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiService.logout();
     } finally {
       dispatch({ type: 'LOGOUT' });
+      // Navigate back to login after logout
+      router.replace('/(auth)/login');
     }
   }
 

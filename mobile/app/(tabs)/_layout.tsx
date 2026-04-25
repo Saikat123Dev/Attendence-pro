@@ -1,5 +1,6 @@
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect } from 'expo-router';
 import React from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -7,7 +8,21 @@ import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 
 export default function TabLayout() {
-  const { user } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
+
+  // Show spinner while checking auth state
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  // Guard: redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/login" />;
+  }
 
   const isTeacher = user?.role === 'TEACHER';
 

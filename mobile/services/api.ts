@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthTokens } from '../types';
 
 // Use your actual server URL here
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'https://attendence-pro-qzxc.onrender.com/api';
 
 // Storage keys
 const ACCESS_TOKEN_KEY = '@attendance_access_token';

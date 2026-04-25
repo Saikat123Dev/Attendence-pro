@@ -133,17 +133,17 @@ async function login(email, password) {
   const user = await User.findOne({ email });
 
   if (!user) {
-    throw Object.assign(new Error('INVALID_CREDENTIALS'), { status: 401 });
+    throw Object.assign(new Error('Invalid email or password'), { status: 401, error: 'INVALID_CREDENTIALS' });
   }
 
   if (!user.isActive) {
-    throw Object.assign(new Error('ACCOUNT_DISABLED'), { status: 403 });
+    throw Object.assign(new Error('Your account has been disabled. Please contact support.'), { status: 403, error: 'ACCOUNT_DISABLED' });
   }
 
   const isMatch = await user.comparePassword(password);
 
   if (!isMatch) {
-    throw Object.assign(new Error('INVALID_CREDENTIALS'), { status: 401 });
+    throw Object.assign(new Error('Invalid email or password'), { status: 401, error: 'INVALID_CREDENTIALS' });
   }
 
   const tokens = await generateTokens(user);
@@ -165,7 +165,7 @@ async function refresh(refreshToken) {
   const user = await User.findById(decoded.sub);
 
   if (!user || !user.isActive) {
-    throw Object.assign(new Error('USER_NOT_FOUND'), { status: 401 });
+    throw Object.assign(new Error('User not found or account is inactive'), { status: 401, error: 'USER_NOT_FOUND' });
   }
 
   // Revoke old refresh token
