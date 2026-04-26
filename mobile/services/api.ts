@@ -2,8 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthTokens } from '../types';
 
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL || 'https://attendence-pro-qzxc.onrender.com/api';
+const API_BASE_URL ='https://attendence-pro-qzxc.onrender.com/api';
 
 // Storage keys
 const ACCESS_TOKEN_KEY = '@attendance_access_token';
