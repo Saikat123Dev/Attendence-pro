@@ -8,7 +8,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
   Dimensions,
@@ -16,11 +15,12 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
-import { Card, Button, Badge } from '@/components/ui';
+import { Badge } from '@/components/ui';
 import { colors, spacing, fontSize } from '@/constants/theme';
 
 const theme = {
@@ -55,7 +55,6 @@ export default function ScanScreen() {
   const [qrIntervalId, setQrIntervalId] = useState<ReturnType<typeof setInterval> | null>(null);
 
   const isTeacher = user?.role === 'TEACHER';
-  const accentColor = isTeacher ? theme.primary : theme.success;
 
   useEffect(() => {
     if (isTeacher) {
@@ -103,8 +102,16 @@ export default function ScanScreen() {
     setIsStarting(true);
     try {
       const res = await apiService.startSession(subjectId);
-      setActiveSessions([res.session]);
-      setSelectedSession(res.session);
+      const selectedSubject = subjects.find((subject) => subject._id === subjectId);
+      const sessionWithSubject = {
+        ...res.session,
+        subjectId: selectedSubject || res.session.subjectId,
+      };
+      setActiveSessions((prev) => {
+        const rest = prev.filter((session) => session._id !== sessionWithSubject._id);
+        return [sessionWithSubject, ...rest];
+      });
+      setSelectedSession(sessionWithSubject);
       setQrData(res.initialToken);
       setShowSubjectModal(false);
     } catch (err: any) {
@@ -115,11 +122,12 @@ export default function ScanScreen() {
     }
   }
 
-  async function fetchQRToken() {
+  async function fetchQRToken(sessionIdOverride?: string) {
+    const targetSessionId = sessionIdOverride || selectedSession?._id;
     // Don't fetch if no session or session is being stopped
-    if (!selectedSession || !selectedSession._id) return;
+    if (!targetSessionId) return;
     try {
-      const res = await apiService.getSessionQR(selectedSession._id);
+      const res = await apiService.getSessionQR(targetSessionId);
       setQrData(res.qrData);
     } catch (err: any) {
       // Silently handle errors when session is stopped/deactivated
@@ -170,11 +178,11 @@ export default function ScanScreen() {
 
   function selectSession(session: any) {
     setSelectedSession(session);
-    fetchQRToken();
+    fetchQRToken(session._id);
   }
 
-  // Permission denied
-  if (!permission) {
+  // Camera permission flow is only required for students
+  if (!isTeacher && !permission) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -182,13 +190,13 @@ export default function ScanScreen() {
     );
   }
 
-  if (!permission.granted) {
+  if (!isTeacher && !permission?.granted) {
     return (
       <View style={styles.centerContainer}>
-        <View style={styles.permissionCard}>
-          <View style={[styles.permissionIconBg, { backgroundColor: theme.primary + '20' }]}>
-            <Text style={styles.permissionIcon}>📷</Text>
-          </View>
+          <View style={styles.permissionCard}>
+            <View style={[styles.permissionIconBg, { backgroundColor: theme.primary + '20' }]}>
+              <MaterialIcons name="camera-alt" size={34} color={theme.primary} />
+            </View>
           <Text style={styles.permissionTitle}>Camera Access Required</Text>
           <Text style={styles.permissionText}>
             We need camera access to scan QR codes for attendance
@@ -256,7 +264,7 @@ export default function ScanScreen() {
               </View>
 
               <View style={styles.qrRefreshContainer}>
-                <Text style={styles.qrRefresh}>🔄 Auto-refreshes every 2 seconds</Text>
+                <Text style={styles.qrRefresh}>Auto-refreshes every 2 seconds</Text>
               </View>
             </View>
 
@@ -271,7 +279,7 @@ export default function ScanScreen() {
                 try {
                   await apiService.stopSession(sessionId);
                   loadActiveSessions();
-                } catch (err) {
+                } catch {
                   Alert.alert('Error', 'Failed to stop session');
                 }
               }}
@@ -317,7 +325,7 @@ export default function ScanScreen() {
                         disabled={isStarting}
                       >
                         <View style={[styles.subjectIconBg, { backgroundColor: theme.primary + '20' }]}>
-                          <Text style={styles.subjectIcon}>📚</Text>
+                          <MaterialIcons name="menu-book" size={20} color={theme.primary} />
                         </View>
                         <View style={styles.subjectInfo}>
                           <Text style={styles.subjectName}>{subject.name}</Text>
@@ -350,7 +358,7 @@ export default function ScanScreen() {
           <View style={styles.centerContent}>
             <View style={styles.emptyCard}>
               <View style={[styles.emptyIconBg, { backgroundColor: theme.textSecondary + '20' }]}>
-                <Text style={styles.emptyIcon}>📭</Text>
+                <MaterialIcons name="inbox" size={32} color={theme.textSecondary} />
               </View>
               <Text style={styles.emptyTitle}>No Active Sessions</Text>
               <Text style={styles.emptyText}>
@@ -452,7 +460,7 @@ export default function ScanScreen() {
                       disabled={isStarting}
                     >
                       <View style={[styles.subjectIconBg, { backgroundColor: theme.primary + '20' }]}>
-                        <Text style={styles.subjectIcon}>📚</Text>
+                        <MaterialIcons name="menu-book" size={20} color={theme.primary} />
                       </View>
                       <View style={styles.subjectInfo}>
                         <Text style={styles.subjectName}>{subject.name}</Text>

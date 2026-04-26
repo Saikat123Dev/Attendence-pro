@@ -4,6 +4,7 @@ const attendanceController = require('../controllers/attendanceController');
 const { validate, schemas } = require('../middleware/validate');
 const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
+const { attendanceLimiter, qrLimiter } = require('../middleware/rateLimiter');
 
 // All routes require authentication
 router.use(authenticate);
@@ -39,14 +40,25 @@ router.post(
  * @desc    Get current QR token for session display
  * @access  Teacher only
  */
-router.get('/session/:id/qr', authorize('TEACHER'), attendanceController.getSessionQR);
+router.get(
+  '/session/:id/qr',
+  authorize('TEACHER'),
+  qrLimiter,
+  validate(schemas.sessionIdParam, 'params'),
+  attendanceController.getSessionQR
+);
 
 /**
  * @route   GET /api/attendance/session/:id
  * @desc    Get session details
  * @access  Teacher only
  */
-router.get('/session/:id', authorize('TEACHER'), attendanceController.getSession);
+router.get(
+  '/session/:id',
+  authorize('TEACHER'),
+  validate(schemas.sessionIdParam, 'params'),
+  attendanceController.getSession
+);
 
 /**
  * @route   GET /api/attendance/active
@@ -67,7 +79,12 @@ router.get('/history', authorize('TEACHER'), attendanceController.getSessionHist
  * @desc    Get detailed attendance for a session
  * @access  Teacher only
  */
-router.get('/session/:id/details', authorize('TEACHER'), attendanceController.getSessionDetails);
+router.get(
+  '/session/:id/details',
+  authorize('TEACHER'),
+  validate(schemas.sessionIdParam, 'params'),
+  attendanceController.getSessionDetails
+);
 
 // ============ STUDENT ROUTES ============
 
@@ -79,6 +96,7 @@ router.get('/session/:id/details', authorize('TEACHER'), attendanceController.ge
 router.post(
   '/mark',
   authorize('STUDENT'),
+  attendanceLimiter,
   validate(schemas.markAttendance),
   attendanceController.markAttendance
 );

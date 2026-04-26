@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,11 +11,12 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
-import { colors, spacing, fontSize, borderRadius, shadows } from '@/constants/theme';
+import { spacing, fontSize, borderRadius, shadows } from '@/constants/theme';
 
 // Theme colors
 const theme = {
@@ -76,12 +76,9 @@ export default function CompleteProfileScreen() {
       }
 
       const { user } = await apiService.completeProfile(data);
-      console.log('completeProfile response:', JSON.stringify(user, null, 2));
       setUser(user);
       router.replace('/(tabs)');
     } catch (error: any) {
-      console.error('completeProfile error:', error);
-      console.error('Error response:', error.response?.data);
       const errorMsg = error.response?.data?.message || 'Failed to complete profile';
       Alert.alert('Error', errorMsg);
     } finally {
@@ -155,14 +152,11 @@ export default function CompleteProfileScreen() {
                       role === 'TEACHER' && styles.roleIconTeacherActive,
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.roleIconText,
-                        role === 'TEACHER' && styles.roleIconTextActive,
-                      ]}
-                    >
-                      T
-                    </Text>
+                    <MaterialIcons
+                      name="school"
+                      size={16}
+                      color={role === 'TEACHER' ? '#FFFFFF' : theme.text.secondary}
+                    />
                   </View>
                   <Text
                     style={[
@@ -192,14 +186,11 @@ export default function CompleteProfileScreen() {
                       role === 'STUDENT' && styles.roleIconStudentActive,
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.roleIconText,
-                        role === 'STUDENT' && styles.roleIconTextActive,
-                      ]}
-                    >
-                      S
-                    </Text>
+                    <MaterialIcons
+                      name="person"
+                      size={16}
+                      color={role === 'STUDENT' ? '#FFFFFF' : theme.text.secondary}
+                    />
                   </View>
                   <Text
                     style={[
@@ -221,7 +212,7 @@ export default function CompleteProfileScreen() {
                 <Text style={styles.label}>Employee ID</Text>
                 <View style={styles.inputWrapper}>
                   <View style={styles.inputIcon}>
-                    <Text style={styles.inputIconText}>#</Text>
+                    <MaterialIcons name="badge" size={16} color={theme.text.secondary} />
                   </View>
                   <TextInput
                     style={styles.input}
@@ -239,7 +230,7 @@ export default function CompleteProfileScreen() {
                 <Text style={styles.label}>Department</Text>
                 <View style={styles.inputWrapper}>
                   <View style={styles.inputIcon}>
-                    <Text style={styles.inputIconText}>D</Text>
+                    <MaterialIcons name="domain" size={16} color={theme.text.secondary} />
                   </View>
                   <TextInput
                     style={styles.input}
@@ -262,7 +253,7 @@ export default function CompleteProfileScreen() {
                 <Text style={styles.label}>Roll Number</Text>
                 <View style={styles.inputWrapper}>
                   <View style={styles.inputIcon}>
-                    <Text style={styles.inputIconText}>R</Text>
+                    <MaterialIcons name="tag" size={16} color={theme.text.secondary} />
                   </View>
                   <TextInput
                     style={styles.input}
@@ -280,7 +271,7 @@ export default function CompleteProfileScreen() {
                 <Text style={styles.label}>Registration Number</Text>
                 <View style={styles.inputWrapper}>
                   <View style={styles.inputIcon}>
-                    <Text style={styles.inputIconText}>N</Text>
+                    <MaterialIcons name="numbers" size={16} color={theme.text.secondary} />
                   </View>
                   <TextInput
                     style={styles.input}
@@ -299,7 +290,7 @@ export default function CompleteProfileScreen() {
                   <Text style={styles.label}>Branch</Text>
                   <View style={styles.inputWrapper}>
                     <View style={styles.inputIcon}>
-                      <Text style={styles.inputIconText}>B</Text>
+                      <MaterialIcons name="account-tree" size={16} color={theme.text.secondary} />
                     </View>
                     <TextInput
                       style={styles.input}
@@ -317,7 +308,7 @@ export default function CompleteProfileScreen() {
                   <Text style={styles.label}>Semester</Text>
                   <View style={styles.inputWrapper}>
                     <View style={styles.inputIcon}>
-                      <Text style={styles.inputIconText}>S</Text>
+                      <MaterialIcons name="calendar-view-week" size={16} color={theme.text.secondary} />
                     </View>
                     <TextInput
                       style={styles.input}
@@ -491,14 +482,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.student,
     borderColor: theme.student,
   },
-  roleIconText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.text.muted,
-  },
-  roleIconTextActive: {
-    color: '#FFFFFF',
-  },
   roleButtonText: {
     fontSize: fontSize.md,
     fontWeight: '600',
@@ -544,11 +527,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRightWidth: 1,
     borderRightColor: theme.border,
-  },
-  inputIconText: {
-    fontSize: 16,
-    color: theme.primary,
-    fontWeight: '600',
   },
   input: {
     flex: 1,

@@ -5,6 +5,7 @@ const Student = require('../models/Student');
 const Subject = require('../models/Subject');
 const { generateQRToken, validateQRToken } = require('../utils/tokenGenerator');
 const sseManager = require('./sseManager');
+const { isOwnedBy } = require('../utils/profileResolver');
 
 /**
  * Start a new attendance session
@@ -12,7 +13,7 @@ const sseManager = require('./sseManager');
  * @param {string} subjectId - Subject's ObjectId
  * @returns {Object} { session, initialToken }
  */
-async function startSession(teacherId, subjectId) {
+async function startSession(teacherId, subjectId, ownerIds = [teacherId.toString()]) {
   // Verify subject exists and belongs to teacher
   const subject = await Subject.findById(subjectId);
 
@@ -20,7 +21,7 @@ async function startSession(teacherId, subjectId) {
     throw Object.assign(new Error('SUBJECT_NOT_FOUND'), { status: 404 });
   }
 
-  if (subject.teacherId.toString() !== teacherId) {
+  if (!isOwnedBy(subject, ownerIds)) {
     throw Object.assign(new Error('NOT_AUTHORIZED'), { status: 403 });
   }
 
@@ -61,14 +62,14 @@ async function startSession(teacherId, subjectId) {
  * @param {string} sessionId - Session ID to stop
  * @param {string} teacherId - Teacher's ObjectId (for authorization)
  */
-async function stopSession(sessionId, teacherId) {
+async function stopSession(sessionId, teacherId, ownerIds = [teacherId.toString()]) {
   const session = await AttendanceSession.findById(sessionId);
 
   if (!session) {
     throw Object.assign(new Error('SESSION_NOT_FOUND'), { status: 404 });
   }
 
-  if (session.teacherId.toString() !== teacherId) {
+  if (!isOwnedBy(session, ownerIds)) {
     throw Object.assign(new Error('NOT_AUTHORIZED'), { status: 403 });
   }
 
@@ -96,13 +97,16 @@ async function stopSession(sessionId, teacherId) {
  * @param {string} sessionId - Session ID
  * @returns {Object} { session, currentQRToken }
  */
-async function getCurrentSession(sessionId) {
+async function getCurrentSession(sessionId, ownerIds = null) {
   const session = await AttendanceSession.findById(sessionId)
-    .populate('subjectId')
-    .populate('teacherId');
+    .populate('subjectId');
 
   if (!session) {
     throw Object.assign(new Error('SESSION_NOT_FOUND'), { status: 404 });
+  }
+
+  if (ownerIds && !isOwnedBy(session, ownerIds)) {
+    throw Object.assign(new Error('NOT_AUTHORIZED'), { status: 403 });
   }
 
   // Generate fresh token if session is active
@@ -126,11 +130,15 @@ async function getCurrentSession(sessionId) {
  * @param {string} sessionId - Session ID
  * @returns {Object} { qrData, expiresAt }
  */
-async function getSessionQRToken(sessionId) {
+async function getSessionQRToken(sessionId, ownerIds = null) {
   const session = await AttendanceSession.findById(sessionId);
 
   if (!session) {
     throw Object.assign(new Error('SESSION_NOT_FOUND'), { status: 404 });
+  }
+
+  if (ownerIds && !isOwnedBy(session, ownerIds)) {
+    throw Object.assign(new Error('NOT_AUTHORIZED'), { status: 403 });
   }
 
   if (session.status !== 'ACTIVE') {
@@ -184,9 +192,10 @@ async function markAttendance(sessionId, qrData, studentId, deviceInfo) {
   }
 
   // Check if student is enrolled in this subject
-  const subject = await Subject.findById(session.subjectId);
-
-  if (!student.subjects.includes(session.subjectId)) {
+  const isEnrolled = student.subjects.some(
+    (subjectId) => subjectId.toString() === session.subjectId.toString()
+  );
+  if (!isEnrolled) {
     throw Object.assign(new Error('STUDENT_NOT_IN_SUBJECT'), { status: 403 });
   }
 
@@ -364,8 +373,8 @@ async function getStudentStats(studentId, subjectId) {
  * @param {string} teacherId - Teacher's ObjectId
  * @param {Object} filters - Optional filters (subjectId, startDate, endDate, page, limit)
  */
-async function getSessionHistory(teacherId, filters = {}) {
-  const query = { teacherId };
+async function getSessionHistory(teacherIds, filters = {}) {
+  const query = { teacherId: { $in: teacherIds } };
 
   if (filters.subjectId) {
     query.subjectId = filters.subjectId;
@@ -442,14 +451,14 @@ async function getSessionHistory(teacherId, filters = {}) {
  * @param {string} sessionId - Session ID
  * @param {string} teacherId - Teacher's ObjectId for authorization
  */
-async function getSessionDetails(sessionId, teacherId) {
+async function getSessionDetails(sessionId, ownerIds) {
   const session = await AttendanceSession.findById(sessionId).populate('subjectId', 'name code branch semester');
 
   if (!session) {
     throw Object.assign(new Error('SESSION_NOT_FOUND'), { status: 404 });
   }
 
-  if (session.teacherId.toString() !== teacherId) {
+  if (!isOwnedBy(session, ownerIds)) {
     throw Object.assign(new Error('NOT_AUTHORIZED'), { status: 403 });
   }
 

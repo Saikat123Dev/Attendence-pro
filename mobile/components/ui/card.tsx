@@ -1,9 +1,9 @@
 /**
- * Reusable Card Component - AttendX Dark Pro Theme
+ * Reusable Card Component
  */
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { colors, borderRadius, shadows, spacing } from '../../constants/theme';
+import { borderRadius, shadows, spacing } from '../../constants/theme';
 
 interface CardProps {
   children: React.ReactNode;
@@ -28,15 +28,15 @@ export function Card({ children, style, padding = 'md' }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#141828',
-    borderRadius: 14,
+    backgroundColor: '#121A2F',
+    borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: '#1E2235',
-    ...shadows.md,
+    borderColor: '#202A43',
+    ...shadows.sm,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
 });

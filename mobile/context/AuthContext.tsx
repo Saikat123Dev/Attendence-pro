@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { User, AuthTokens } from '../types';
+import { User } from '../types';
 import { apiService } from '../services/api';
 import { router } from 'expo-router';
 
@@ -80,11 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  function navigateAfterAuth() {
+  function navigateAfterAuth(user: User | null) {
     // If authenticated but no role, go to complete-profile
     // Otherwise go to tabs
-    const currentUser = state.user;
-    if (currentUser && !currentUser.role) {
+    if (user && !user.role) {
       router.replace('/(auth)/complete-profile');
     } else {
       router.replace('/(tabs)');
@@ -103,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       dispatch({ type: 'SET_USER', payload: response.user });
 
-      navigateAfterAuth();
+      navigateAfterAuth(response.user);
     } catch (error: any) {
       const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
       dispatch({ type: 'SET_ERROR', payload: message });

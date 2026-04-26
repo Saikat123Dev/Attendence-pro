@@ -10,16 +10,16 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  TouchableOpacity,
   Pressable,
   Alert,
   Modal,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
-import { Card, Button, Badge, Input } from '@/components/ui';
-import { colors, spacing, fontSize, borderRadius } from '@/constants/theme';
+import { Badge, Input } from '@/components/ui';
+import { colors, spacing, fontSize } from '@/constants/theme';
 
 const theme = {
   background: '#0A0D14',
@@ -96,8 +96,19 @@ export default function SubjectsScreen() {
   }
 
   async function handleSubmit() {
-    if (!formData.name.trim() || !formData.code.trim() || !formData.semester.trim()) {
+    if (
+      !formData.name.trim() ||
+      !formData.code.trim() ||
+      !formData.branch.trim() ||
+      !formData.semester.trim()
+    ) {
       Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    const semesterValue = parseInt(formData.semester, 10);
+    if (!Number.isInteger(semesterValue) || semesterValue < 1 || semesterValue > 8) {
+      Alert.alert('Error', 'Semester must be a number between 1 and 8');
       return;
     }
 
@@ -106,8 +117,8 @@ export default function SubjectsScreen() {
       const data = {
         name: formData.name.trim(),
         code: formData.code.trim().toUpperCase(),
-        branch: formData.branch.trim(),
-        semester: parseInt(formData.semester, 10),
+        branch: formData.branch.trim().toUpperCase(),
+        semester: semesterValue,
       };
 
       if (editingSubject) {
@@ -119,7 +130,7 @@ export default function SubjectsScreen() {
       }
 
       setShowModal(false);
-      loadSubjects();
+      await loadSubjects();
     } catch (err: any) {
       Alert.alert('Error', err.response?.data?.message || 'Failed to save subject');
     } finally {
@@ -200,7 +211,7 @@ export default function SubjectsScreen() {
           <View style={styles.emptyContainer}>
             <View style={styles.emptyCard}>
               <View style={[styles.emptyIconBg, { backgroundColor: (isTeacher ? theme.primary : theme.success) + '20' }]}>
-                <Text style={styles.emptyIcon}>📚</Text>
+                <MaterialIcons name="menu-book" size={30} color={isTeacher ? theme.primary : theme.success} />
               </View>
               <Text style={styles.emptyTitle}>
                 {isTeacher ? 'No Subjects Yet' : 'No Enrolled Subjects'}
@@ -237,7 +248,7 @@ export default function SubjectsScreen() {
                 <View style={styles.subjectCardInner}>
                   <View style={styles.subjectHeader}>
                     <View style={[styles.subjectIconBg, { backgroundColor: (isTeacher ? theme.primary : theme.success) + '20' }]}>
-                      <Text style={styles.subjectIcon}>📚</Text>
+                      <MaterialIcons name="menu-book" size={20} color={isTeacher ? theme.primary : theme.success} />
                     </View>
                     <View style={styles.subjectInfo}>
                       <Text style={styles.subjectName}>{subject.name}</Text>
@@ -250,7 +261,7 @@ export default function SubjectsScreen() {
                         style={styles.deleteButton}
                         onPress={() => handleDelete(subject)}
                       >
-                        <Text style={styles.deleteButtonText}>✕</Text>
+                        <MaterialIcons name="delete-outline" size={20} color={theme.danger} />
                       </Pressable>
                     )}
                   </View>
@@ -301,7 +312,7 @@ export default function SubjectsScreen() {
                   {editingSubject ? 'Edit Subject' : 'Create Subject'}
                 </Text>
                 <Pressable onPress={() => setShowModal(false)}>
-                  <Text style={styles.modalClose}>✕</Text>
+                  <MaterialIcons name="close" size={22} color={theme.textSecondary} />
                 </Pressable>
               </View>
 
@@ -328,7 +339,7 @@ export default function SubjectsScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Branch</Text>
+                  <Text style={styles.inputLabel}>Branch *</Text>
                   <Input
                     value={formData.branch}
                     onChangeText={(text) => setFormData({ ...formData, branch: text })}
@@ -436,9 +447,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  emptyIcon: {
-    fontSize: 40,
-  },
+  emptyIcon: {},
   emptyTitle: {
     fontSize: fontSize.xl,
     fontWeight: '700',
@@ -509,9 +518,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: spacing.md,
   },
-  subjectIcon: {
-    fontSize: 18,
-  },
+  subjectIcon: {},
   subjectInfo: {
     flex: 1,
   },
@@ -528,11 +535,7 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: spacing.sm,
   },
-  deleteButtonText: {
-    fontSize: 18,
-    color: theme.danger,
-    fontWeight: '600',
-  },
+  deleteButtonText: {},
   subjectMeta: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -571,11 +574,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: theme.textPrimary,
   },
-  modalClose: {
-    fontSize: 20,
-    color: theme.textSecondary,
-    padding: spacing.sm,
-  },
+  modalClose: {},
   form: {
     gap: spacing.md,
   },

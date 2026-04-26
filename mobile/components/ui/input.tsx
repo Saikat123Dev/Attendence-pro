@@ -1,5 +1,5 @@
 /**
- * Reusable Input Component - AttendX Dark Pro Theme
+ * Reusable Input Component
  */
 import React, { useState } from 'react';
 import {
@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   TextInputProps,
 } from 'react-native';
-import { colors, spacing, fontSize } from '../../constants/theme';
+import { spacing, fontSize, borderRadius } from '../../constants/theme';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -36,7 +36,7 @@ export function Input({
   const getBorderColor = (): string => {
     if (error) return '#EF4444';
     if (isFocused) return '#4F6EF7';
-    return '#1E2235';
+    return '#252B42';
   };
 
   return (
@@ -46,7 +46,7 @@ export function Input({
       <View
         style={[
           styles.inputContainer,
-          { borderColor: getBorderColor(), borderWidth: isFocused ? 2 : 1.5 },
+          { borderColor: getBorderColor(), borderWidth: isFocused ? 2 : 1 },
           error && styles.errorBorder,
         ]}
       >
@@ -54,7 +54,7 @@ export function Input({
 
         <TextInput
           style={[styles.input, leftIcon ? styles.inputWithLeftIcon : null, style]}
-          placeholderTextColor="#4A5280"
+          placeholderTextColor="#6B7194"
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           {...props}
@@ -84,16 +84,15 @@ const styles = StyleSheet.create({
   label: {
     fontSize: fontSize.sm,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: '#C0C5E0',
     marginBottom: spacing.xs,
-    letterSpacing: 0.2,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A2035',
-    borderRadius: 14,
-    minHeight: 52,
+    backgroundColor: '#10162A',
+    borderRadius: borderRadius.md,
+    minHeight: 50,
   },
   errorBorder: {
     borderWidth: 2,
@@ -123,7 +122,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontSize: fontSize.xs,
-    color: '#5C5C5C',
+    color: '#8E8E93',
     marginTop: spacing.xs,
   },
 });

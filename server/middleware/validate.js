@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const objectId = Joi.string().pattern(/^[0-9a-fA-F]{24}$/);
 
 /**
  * Request Validation Middleware Factory
@@ -37,7 +38,7 @@ const schemas = {
   }),
 
   completeProfile: Joi.object({
-    role: Joi.string().valid('TEACHER', 'STUDENT').required(),
+    role: Joi.string().uppercase().valid('TEACHER', 'STUDENT').required(),
     // Teacher specific
     employeeId: Joi.string().when('role', {
       is: 'TEACHER',
@@ -83,17 +84,55 @@ const schemas = {
 
   // Attendance schemas
   startSession: Joi.object({
-    subjectId: Joi.string().required(),
+    subjectId: objectId.required(),
   }),
 
   stopSession: Joi.object({
-    sessionId: Joi.string().required(),
+    sessionId: objectId.required(),
   }),
 
   markAttendance: Joi.object({
-    sessionId: Joi.string().required(),
+    sessionId: objectId.required(),
     qrData: Joi.string().required(),
     deviceInfo: Joi.string().optional(),
+  }),
+
+  // Subject schemas
+  subjectIdParam: Joi.object({
+    id: objectId.required(),
+  }),
+
+  sessionIdParam: Joi.object({
+    id: objectId.required(),
+  }),
+
+  studentIdParam: Joi.object({
+    id: objectId.required(),
+  }),
+
+  createSubject: Joi.object({
+    name: Joi.string().trim().min(2).max(120).required(),
+    code: Joi.string().trim().uppercase().min(2).max(20).required(),
+    branch: Joi.string().trim().uppercase().min(2).max(50).required(),
+    semester: Joi.number().integer().min(1).max(8).required(),
+  }),
+
+  updateSubject: Joi.object({
+    name: Joi.string().trim().min(2).max(120).optional(),
+    code: Joi.string().trim().uppercase().min(2).max(20).optional(),
+    branch: Joi.string().trim().uppercase().min(2).max(50).optional(),
+    semester: Joi.number().integer().min(1).max(8).optional(),
+  }).min(1),
+
+  subjectStudentBulk: Joi.object({
+    studentIds: Joi.array()
+      .items(objectId.required())
+      .min(1)
+      .required(),
+  }),
+
+  addStudentToSubject: Joi.object({
+    subjectId: objectId.required(),
   }),
 };
 

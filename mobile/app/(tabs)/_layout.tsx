@@ -8,7 +8,6 @@ import { ActivityIndicator, View, StyleSheet, Platform } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 
 // Theme colors for AttendX Dark Pro
@@ -43,11 +42,12 @@ export default function TabLayout() {
   }
 
   const isTeacher = user?.role === 'TEACHER';
+  const accentColor = isTeacher ? theme.primary : theme.success;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: theme.primary,
+        tabBarActiveTintColor: accentColor,
         tabBarInactiveTintColor: theme.textSecondary,
         headerShown: true,
         tabBarButton: HapticTab,
@@ -122,8 +122,7 @@ export default function TabLayout() {
               {focused && <View style={styles.activeDot} />}
             </View>
           ),
-          headerTitle: 'My Subjects',
-          tabBarStyle: { display: isTeacher ? 'flex' : 'none' },
+          headerTitle: isTeacher ? 'My Subjects' : 'Enrolled Subjects',
         }}
       />
       <Tabs.Screen

@@ -10,17 +10,16 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  TouchableOpacity,
   Pressable,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
-import { Card, Badge, Loading, EmptyState } from '@/components/ui';
-import { StatsCard } from '@/components/attendance/stats-card';
+import { Badge, Loading, EmptyState } from '@/components/ui';
 import { AttendanceRecordItem } from '@/components/attendance/record-item';
-import { colors, spacing, fontSize, borderRadius, shadows } from '@/constants/theme';
+import { colors, spacing, fontSize } from '@/constants/theme';
 import { AttendanceRecord } from '@/types';
 
 // AttendX Dark Pro Theme Colors
@@ -127,7 +126,7 @@ export default function AttendanceScreen() {
           {sessions.length === 0 ? (
             <View style={styles.emptyCard}>
               <View style={styles.emptyIconBox}>
-                <Text style={styles.emptyIconLarge}>📭</Text>
+                <MaterialIcons name="inbox" size={30} color={theme.primary} />
               </View>
               <Text style={styles.emptyTitle}>No Sessions Yet</Text>
               <Text style={styles.emptyText}>Start your first attendance session to see it here</Text>
@@ -152,7 +151,11 @@ export default function AttendanceScreen() {
                   <View style={styles.sessionItemContent}>
                     <View style={styles.sessionItemLeft}>
                       <View style={[styles.sessionItemIconBg, { backgroundColor: session.status === 'ACTIVE' ? theme.success + '20' : theme.primary + '20' }]}>
-                        <Text style={styles.sessionItemIcon}>📚</Text>
+                        <MaterialIcons
+                          name="menu-book"
+                          size={18}
+                          color={session.status === 'ACTIVE' ? theme.success : theme.primary}
+                        />
                       </View>
                       <View style={styles.sessionItemInfo}>
                         <Text style={styles.sessionSubject}>
@@ -334,7 +337,7 @@ export default function AttendanceScreen() {
             <EmptyState
               title="No records found"
               message="Your attendance history will appear here"
-              icon="📋"
+              icon={<MaterialIcons name="history" size={24} color={theme.textSecondary} />}
             />
           </LinearGradient>
         ) : (

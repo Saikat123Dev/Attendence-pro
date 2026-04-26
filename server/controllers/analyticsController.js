@@ -3,6 +3,7 @@ const AttendanceRecord = require('../models/AttendanceRecord');
 const AttendanceStats = require('../models/AttendanceStats');
 const Student = require('../models/Student');
 const Subject = require('../models/Subject');
+const { getTeacherIdentityByUserId, isOwnedBy } = require('../utils/profileResolver');
 
 /**
  * Get overall analytics for teacher
@@ -11,21 +12,23 @@ const Subject = require('../models/Subject');
  */
 async function getOverview(req, res, next) {
   try {
-    const teacherId = req.user.sub;
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
 
     // Get today's sessions
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const subjects = await Subject.find({ teacherId: { $in: ownerIds } }).select('_id');
+    const subjectIds = subjects.map((s) => s._id);
 
     const [totalSessions, todaySessions, totalStudents, recentRecords] = await Promise.all([
-      AttendanceSession.countDocuments({ teacherId }),
+      AttendanceSession.countDocuments({ teacherId: { $in: ownerIds } }),
       AttendanceSession.countDocuments({
-        teacherId,
+        teacherId: { $in: ownerIds },
         startedAt: { $gte: today },
       }),
-      Student.countDocuments(),
+      Student.countDocuments({ subjects: { $in: subjectIds } }),
       AttendanceRecord.countDocuments({
-        teacherId,
+        teacherId: { $in: ownerIds },
         createdAt: { $gte: today },
       }),
     ]);
@@ -49,7 +52,7 @@ async function getOverview(req, res, next) {
 async function getSubjectAnalytics(req, res, next) {
   try {
     const { id } = req.params;
-    const teacherId = req.user.sub;
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
 
     const subject = await Subject.findById(id);
 
@@ -57,7 +60,7 @@ async function getSubjectAnalytics(req, res, next) {
       return res.status(404).json({ error: 'SUBJECT_NOT_FOUND' });
     }
 
-    if (subject.teacherId.toString() !== teacherId) {
+    if (!isOwnedBy(subject, ownerIds)) {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
@@ -125,11 +128,11 @@ async function getSubjectAnalytics(req, res, next) {
  */
 async function getAlerts(req, res, next) {
   try {
-    const teacherId = req.user.sub;
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
     const { threshold = 75 } = req.query;
 
     // Get teacher's subjects
-    const subjects = await Subject.find({ teacherId });
+    const subjects = await Subject.find({ teacherId: { $in: ownerIds } });
     const subjectIds = subjects.map((s) => s._id);
 
     // Find students with low attendance

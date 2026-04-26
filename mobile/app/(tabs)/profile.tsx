@@ -11,10 +11,11 @@ import {
   Alert,
   Pressable,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
-import { Card, Avatar, Badge, Button } from '@/components/ui';
-import { colors, spacing, fontSize, borderRadius, shadows } from '@/constants/theme';
+import { Avatar, Badge } from '@/components/ui';
+import { colors, spacing, fontSize } from '@/constants/theme';
 import { StudentProfile, TeacherProfile, Subject } from '@/types';
 
 // AttendX Dark Pro Theme Colors
@@ -88,7 +89,7 @@ export default function ProfileScreen() {
                 size="xxl"
               />
               <View style={styles.avatarEditBadge}>
-                <Text style={styles.avatarEditIcon}>✏</Text>
+                <MaterialIcons name="person" size={14} color="#111827" />
               </View>
             </View>
           </TouchableOpacity>
@@ -233,7 +234,7 @@ export default function ProfileScreen() {
             ]}
           >
             <View style={styles.menuItemLeft}>
-              <Text style={styles.menuItemIcon}>🔔</Text>
+              <MaterialIcons name="notifications-none" size={18} color={theme.textSecondary} />
               <Text style={styles.menuItemText}>Notification Settings</Text>
             </View>
             <Text style={styles.menuItemArrow}>›</Text>
@@ -246,7 +247,7 @@ export default function ProfileScreen() {
             ]}
           >
             <View style={styles.menuItemLeft}>
-              <Text style={styles.menuItemIcon}>🔒</Text>
+              <MaterialIcons name="lock-outline" size={18} color={theme.textSecondary} />
               <Text style={styles.menuItemText}>Privacy Policy</Text>
             </View>
             <Text style={styles.menuItemArrow}>›</Text>
@@ -259,7 +260,7 @@ export default function ProfileScreen() {
             ]}
           >
             <View style={styles.menuItemLeft}>
-              <Text style={styles.menuItemIcon}>📄</Text>
+              <MaterialIcons name="description" size={18} color={theme.textSecondary} />
               <Text style={styles.menuItemText}>Terms of Service</Text>
             </View>
             <Text style={styles.menuItemArrow}>›</Text>
@@ -267,7 +268,7 @@ export default function ProfileScreen() {
           <View style={styles.menuDivider} />
           <View style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <Text style={styles.menuItemIcon}>ℹ️</Text>
+              <MaterialIcons name="info-outline" size={18} color={theme.textSecondary} />
               <Text style={styles.menuItemText}>App Version</Text>
             </View>
             <Text style={styles.menuItemValue}>1.0.0</Text>

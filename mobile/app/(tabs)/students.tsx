@@ -13,8 +13,8 @@ import {
   Alert,
   Modal,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
 import { Badge } from '@/components/ui';
 import { colors, spacing, fontSize } from '@/constants/theme';
@@ -35,10 +35,8 @@ const theme = {
 };
 
 export default function StudentsScreen() {
-  const { user } = useAuth();
   const [subjects, setSubjects] = useState<any[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<any>(null);
-  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
   const [availableStudents, setAvailableStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,15 +58,6 @@ export default function StudentsScreen() {
     }
   }
 
-  async function loadEnrolledStudents(subjectId: string) {
-    try {
-      const res = await apiService.getSessionDetails(subjectId);
-      setEnrolledStudents(res.absentStudents || []);
-    } catch (err) {
-      console.error('Error loading students:', err);
-    }
-  }
-
   async function loadAvailableStudents(subjectId: string) {
     try {
       const res = await apiService.getAvailableStudents(subjectId);
@@ -81,9 +70,6 @@ export default function StudentsScreen() {
   async function onRefresh() {
     setRefreshing(true);
     await loadSubjects();
-    if (selectedSubject) {
-      await loadEnrolledStudents(selectedSubject._id);
-    }
     setRefreshing(false);
   }
 
@@ -99,7 +85,7 @@ export default function StudentsScreen() {
     try {
       await apiService.enrollStudents(selectedSubject._id, studentIds);
       Alert.alert('Success', `${studentIds.length} student(s) enrolled successfully`);
-      loadEnrolledStudents(selectedSubject._id);
+      loadSubjects();
       setShowEnrollModal(false);
     } catch (err: any) {
       Alert.alert('Error', err.response?.data?.message || 'Failed to enroll students');
@@ -108,10 +94,10 @@ export default function StudentsScreen() {
     }
   }
 
-  async function unenrollStudent(studentId: string, studentName: string) {
+  async function unenrollStudent(subject: any, studentId: string, studentName: string) {
     Alert.alert(
       'Unenroll Student',
-      `Remove ${studentName} from ${selectedSubject.name}?`,
+      `Remove ${studentName} from ${subject.name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -119,9 +105,9 @@ export default function StudentsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await apiService.unenrollStudents(selectedSubject._id, [studentId]);
+              await apiService.unenrollStudents(subject._id, [studentId]);
               Alert.alert('Success', 'Student unenrolled');
-              loadEnrolledStudents(selectedSubject._id);
+              loadSubjects();
             } catch (err: any) {
               Alert.alert('Error', err.response?.data?.message || 'Failed to unenroll');
             }
@@ -158,7 +144,7 @@ export default function StudentsScreen() {
       >
         {subjects.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>👥</Text>
+            <MaterialIcons name="groups-2" size={44} color={theme.primary} style={styles.emptyIcon} />
             <Text style={styles.emptyTitle}>No Subjects Yet</Text>
             <Text style={styles.emptyText}>
               Create subjects first to enroll students
@@ -176,7 +162,7 @@ export default function StudentsScreen() {
               <View key={subject._id} style={styles.subjectCard}>
                 <View style={styles.subjectHeader}>
                   <View style={[styles.subjectIconBg, { backgroundColor: theme.primary + '20' }]}>
-                    <Text style={styles.subjectIcon}>📚</Text>
+                    <MaterialIcons name="menu-book" size={20} color={theme.primary} />
                   </View>
                   <View style={styles.subjectInfo}>
                     <Text style={styles.subjectName}>{subject.name}</Text>
@@ -194,11 +180,9 @@ export default function StudentsScreen() {
 
                 <StudentList
                   subjectId={subject._id}
-                  onUnenroll={unenrollStudent}
-                  onViewDetails={() => {
-                    setSelectedSubject(subject);
-                    loadEnrolledStudents(subject._id);
-                  }}
+                  onUnenroll={(studentId: string, studentName: string) =>
+                    unenrollStudent(subject, studentId, studentName)
+                  }
                 />
               </View>
             ))}
@@ -219,7 +203,7 @@ export default function StudentsScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Enroll Students</Text>
               <Pressable onPress={() => setShowEnrollModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <MaterialIcons name="close" size={22} color={theme.textSecondary} />
               </Pressable>
             </View>
             <Text style={styles.modalSubtitle}>
@@ -254,7 +238,7 @@ export default function StudentsScreen() {
                         </Text>
                       </View>
                       <View style={styles.addIcon}>
-                        <Text style={styles.addIconText}>+</Text>
+                        <MaterialIcons name="person-add-alt-1" size={16} color={colors.white} />
                       </View>
                     </Pressable>
                   ))}
@@ -268,7 +252,7 @@ export default function StudentsScreen() {
   );
 }
 
-function StudentList({ subjectId, onUnenroll, onViewDetails }: any) {
+function StudentList({ subjectId, onUnenroll }: any) {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -282,11 +266,11 @@ function StudentList({ subjectId, onUnenroll, onViewDetails }: any) {
   async function loadStudents() {
     setLoading(true);
     try {
-      const res = await apiService.getSessionDetails(subjectId);
-      const allStudents = [
-        ...(res.presentStudents || []).map((s: any) => ({ ...s.student, status: 'PRESENT' })),
-        ...(res.absentStudents || []).map((s: any) => ({ ...s.student, status: 'ABSENT' })),
-      ];
+      const res = await apiService.getSubject(subjectId);
+      const allStudents = (res.enrolledStudents || []).map((student: any) => ({
+        ...student,
+        status: 'ENROLLED',
+      }));
       setStudents(allStudents);
     } catch (err) {
       console.error('Error loading students:', err);
@@ -325,15 +309,15 @@ function StudentList({ subjectId, onUnenroll, onViewDetails }: any) {
                   </Text>
                 </View>
                 <Badge
-                  text={student.status === 'PRESENT' ? 'Present' : 'Absent'}
-                  variant={student.status === 'PRESENT' ? 'success' : 'danger'}
+                  text="Enrolled"
+                  variant="default"
                   size="sm"
                 />
                 <Pressable
                   style={styles.unenrollBtn}
                   onPress={() => onUnenroll(student._id, student.name)}
                 >
-                  <Text style={styles.unenrollText}>✕</Text>
+                  <MaterialIcons name="person-remove-alt-1" size={18} color={theme.danger} />
                 </Pressable>
               </View>
             ))
@@ -432,7 +416,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: spacing.md,
   },
-  subjectIcon: { fontSize: 20 },
+  subjectIcon: {},
   subjectInfo: { flex: 1 },
   subjectName: {
     fontSize: fontSize.md,
@@ -602,7 +586,5 @@ const styles = StyleSheet.create({
   },
   addIconText: {
     color: colors.white,
-    fontWeight: '700',
-    fontSize: 16,
   },
 });

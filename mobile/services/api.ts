@@ -1,9 +1,9 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthTokens, RegisterRequest } from '../types';
+import { AuthTokens } from '../types';
 
-// Use your actual server URL here
-const API_BASE_URL = 'https://attendence-pro-qzxc.onrender.com/api';
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_BASE_URL || 'https://attendence-pro-qzxc.onrender.com/api';
 
 // Storage keys
 const ACCESS_TOKEN_KEY = '@attendance_access_token';
@@ -22,7 +22,11 @@ type CompleteProfileData = {
 class ApiService {
   private api: ReturnType<typeof axios.create>;
   private isRefreshing = false;
-  private refreshSubscribers: Array<(token: string) => void> = [];
+  private refreshSubscribers: Array<{
+    resolve: (value: any) => void;
+    reject: (error: unknown) => void;
+    originalRequest: any;
+  }> = [];
 
   constructor() {
     this.api = axios.create({
@@ -75,7 +79,12 @@ class ApiService {
               await AsyncStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
 
               // Retry all queued requests
-              this.refreshSubscribers.forEach((cb) => cb(accessToken));
+              this.refreshSubscribers.forEach(({ resolve, originalRequest }) => {
+                if (originalRequest.headers) {
+                  originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+                }
+                resolve(this.api(originalRequest));
+              });
               this.refreshSubscribers = [];
 
               // Retry original request
@@ -84,6 +93,7 @@ class ApiService {
             } catch (refreshError) {
               // Refresh failed - clear tokens and redirect to login
               await this.clearTokens();
+              this.refreshSubscribers.forEach(({ reject }) => reject(refreshError));
               this.refreshSubscribers = [];
               throw refreshError;
             } finally {
@@ -91,15 +101,16 @@ class ApiService {
             }
           }
 
-          // Queue requests while refreshing
-          return new Promise((resolve) => {
-            this.refreshSubscribers.push((token: string) => {
-              if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${token}`;
-              }
-              resolve(this.api(originalRequest));
+          // Queue only while refresh is in progress
+          if (this.isRefreshing) {
+            return new Promise((resolve, reject) => {
+              this.refreshSubscribers.push({
+                resolve,
+                reject,
+                originalRequest,
+              });
             });
-          });
+          }
         }
 
         return Promise.reject(error);
@@ -151,12 +162,12 @@ class ApiService {
 
   async completeProfile(data: CompleteProfileData) {
     const response = await this.api.post('/auth/complete-profile', data);
-    const { user, accessToken, refreshToken } = response as { user?: any; accessToken?: string; refreshToken?: string };
+    const { user, accessToken, refreshToken } = response.data as { user?: any; accessToken?: string; refreshToken?: string };
     if (accessToken && refreshToken) {
       await AsyncStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
       await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     }
-    return { user };
+    return response.data;
   }
 
   // ============ Attendance Endpoints ============

@@ -1,7 +1,6 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { router } from 'expo-router';
 
 const THEME = {
   bg: '#0A0D14',
@@ -10,8 +9,12 @@ const THEME = {
 export default function AuthLayout() {
   const { user, isLoading } = useAuth();
 
-  // Redirect to complete-profile if authenticated but no role
+  // Redirect authenticated users away from auth stack
   useEffect(() => {
+    if (!isLoading && user?.role) {
+      router.replace('/(tabs)');
+      return;
+    }
     if (!isLoading && user && !user.role) {
       router.replace('/(auth)/complete-profile');
     }

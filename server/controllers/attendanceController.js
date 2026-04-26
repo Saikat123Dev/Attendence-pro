@@ -1,4 +1,8 @@
 const attendanceService = require('../services/attendanceService');
+const {
+  getTeacherIdentityByUserId,
+  getStudentIdentityByUserId,
+} = require('../utils/profileResolver');
 
 /**
  * Start attendance session
@@ -8,9 +12,9 @@ const attendanceService = require('../services/attendanceService');
 async function startSession(req, res, next) {
   try {
     const { subjectId } = req.body;
-    const teacherId = req.user.sub;
+    const { teacherId, ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
 
-    const result = await attendanceService.startSession(teacherId, subjectId);
+    const result = await attendanceService.startSession(teacherId, subjectId, ownerIds);
 
     res.status(201).json({
       message: 'Session started',
@@ -35,9 +39,9 @@ async function startSession(req, res, next) {
 async function stopSession(req, res, next) {
   try {
     const { sessionId } = req.body;
-    const teacherId = req.user.sub;
+    const { teacherId, ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
 
-    const session = await attendanceService.stopSession(sessionId, teacherId);
+    const session = await attendanceService.stopSession(sessionId, teacherId, ownerIds);
 
     res.json({
       message: 'Session stopped',
@@ -61,7 +65,8 @@ async function stopSession(req, res, next) {
 async function getSessionQR(req, res, next) {
   try {
     const { id } = req.params;
-    const result = await attendanceService.getSessionQRToken(id);
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
+    const result = await attendanceService.getSessionQRToken(id, ownerIds);
 
     res.json({
       qrData: result.qrData,
@@ -80,7 +85,8 @@ async function getSessionQR(req, res, next) {
 async function getSession(req, res, next) {
   try {
     const { id } = req.params;
-    const result = await attendanceService.getCurrentSession(id);
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
+    const result = await attendanceService.getCurrentSession(id, ownerIds);
 
     res.json({
       session: result.session,
@@ -99,7 +105,7 @@ async function getSession(req, res, next) {
 async function markAttendance(req, res, next) {
   try {
     const { sessionId, qrData, deviceInfo } = req.body;
-    const studentId = req.user.sub;
+    const { studentId } = await getStudentIdentityByUserId(req.user.sub);
 
     const record = await attendanceService.markAttendance(
       sessionId,
@@ -128,7 +134,7 @@ async function markAttendance(req, res, next) {
  */
 async function getMyAttendance(req, res, next) {
   try {
-    const studentId = req.user.sub;
+    const { studentId } = await getStudentIdentityByUserId(req.user.sub);
     const { subjectId, startDate, endDate } = req.query;
 
     const records = await attendanceService.getStudentAttendance(studentId, {
@@ -150,7 +156,7 @@ async function getMyAttendance(req, res, next) {
  */
 async function getMyStats(req, res, next) {
   try {
-    const studentId = req.user.sub;
+    const { studentId } = await getStudentIdentityByUserId(req.user.sub);
     const { subjectId } = req.query;
 
     const stats = await attendanceService.getStudentStats(studentId, subjectId);
@@ -168,11 +174,11 @@ async function getMyStats(req, res, next) {
  */
 async function getActiveSessions(req, res, next) {
   try {
-    const teacherId = req.user.sub;
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
     const AttendanceSession = require('../models/AttendanceSession');
 
     const sessions = await AttendanceSession.find({
-      teacherId,
+      teacherId: { $in: ownerIds },
       status: 'ACTIVE',
     }).populate('subjectId', 'name code');
 
@@ -189,10 +195,10 @@ async function getActiveSessions(req, res, next) {
  */
 async function getSessionHistory(req, res, next) {
   try {
-    const teacherId = req.user.sub;
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
     const { subjectId, status, startDate, endDate, page, limit } = req.query;
 
-    const result = await attendanceService.getSessionHistory(teacherId, {
+    const result = await attendanceService.getSessionHistory(ownerIds, {
       subjectId,
       status,
       startDate,
@@ -215,9 +221,9 @@ async function getSessionHistory(req, res, next) {
 async function getSessionDetails(req, res, next) {
   try {
     const { id } = req.params;
-    const teacherId = req.user.sub;
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
 
-    const result = await attendanceService.getSessionDetails(id, teacherId);
+    const result = await attendanceService.getSessionDetails(id, ownerIds);
 
     res.json(result);
   } catch (err) {

@@ -1,9 +1,9 @@
 /**
- * Reusable Empty State Component - AttendX Dark Pro Theme
+ * Reusable Empty State Component
  */
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, spacing, fontSize } from '../../constants/theme';
+import { spacing, fontSize } from '../../constants/theme';
 import { Button } from './button';
 
 interface EmptyStateProps {
@@ -63,59 +63,58 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   iconText: {
-    fontSize: 32,
-    color: '#4F6EF7',
+    fontSize: 28,
+    color: '#7B93FC',
   },
   illustrationPlaceholder: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: '#1E2235',
+    width: 72,
+    height: 72,
+    borderRadius: 999,
+    backgroundColor: '#162347',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: '#2D2D3A',
+    borderColor: '#30478E',
   },
   illustrationInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#141828',
+    width: 42,
+    height: 42,
+    borderRadius: 999,
+    backgroundColor: '#4F6EF7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   illustrationCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#4F6EF7',
-    opacity: 0.6,
+    width: 16,
+    height: 16,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.9,
   },
   illustrationCircleSmall: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#7C3AED',
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
     opacity: 0.8,
     position: 'absolute',
-    bottom: 12,
-    right: 12,
+    bottom: 8,
+    right: 8,
   },
   title: {
     fontSize: fontSize.lg,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#F0F2FF',
     textAlign: 'center',
     marginBottom: spacing.xs,
-    letterSpacing: 0.2,
   },
   message: {
     fontSize: fontSize.md,
-    color: '#8E8E93',
+    color: '#C0C5E0',
     textAlign: 'center',
     maxWidth: 280,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   button: {
     marginTop: spacing.lg,

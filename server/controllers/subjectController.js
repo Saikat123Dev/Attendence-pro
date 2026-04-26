@@ -1,5 +1,11 @@
 const Subject = require('../models/Subject');
 const Student = require('../models/Student');
+const Teacher = require('../models/Teacher');
+const {
+  getTeacherIdentityByUserId,
+  getStudentIdentityByUserId,
+  isOwnedBy,
+} = require('../utils/profileResolver');
 
 /**
  * Get all subjects for current teacher
@@ -7,9 +13,9 @@ const Student = require('../models/Student');
  */
 async function getMySubjects(req, res, next) {
   try {
-    const teacherId = req.user.sub;
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
 
-    const subjects = await Subject.find({ teacherId })
+    const subjects = await Subject.find({ teacherId: { $in: ownerIds } })
       .populate('teacherId', 'name employeeId')
       .sort({ name: 1 });
 
@@ -27,15 +33,26 @@ async function getSubjectById(req, res, next) {
   try {
     const { id } = req.params;
 
-    const subject = await Subject.findById(id)
-      .populate('teacherId', 'name employeeId department');
+    const subject = await Subject.findById(id);
 
     if (!subject) {
       return res.status(404).json({ error: 'SUBJECT_NOT_FOUND' });
     }
 
-    // Check if teacher owns this subject
-    if (subject.teacherId._id.toString() !== req.user.sub && req.user.role !== 'TEACHER') {
+    if (req.user.role === 'TEACHER') {
+      const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
+      if (!isOwnedBy(subject, ownerIds)) {
+        return res.status(403).json({ error: 'FORBIDDEN' });
+      }
+    } else if (req.user.role === 'STUDENT') {
+      const { student } = await getStudentIdentityByUserId(req.user.sub);
+      const isEnrolled = student.subjects.some(
+        (subjectId) => subjectId.toString() === id
+      );
+      if (!isEnrolled) {
+        return res.status(403).json({ error: 'FORBIDDEN' });
+      }
+    } else {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
@@ -43,6 +60,8 @@ async function getSubjectById(req, res, next) {
     const students = await Student.find({ subjects: id })
       .select('name rollNumber branch semester')
       .sort({ rollNumber: 1 });
+
+    await subject.populate('teacherId', 'name employeeId department');
 
     res.json({
       subject,
@@ -62,7 +81,7 @@ async function getSubjectById(req, res, next) {
 async function createSubject(req, res, next) {
   try {
     const { name, code, branch, semester } = req.body;
-    const teacherId = req.user.sub;
+    const { teacher } = await getTeacherIdentityByUserId(req.user.sub);
 
     // Check if code already exists
     const existing = await Subject.findOne({ code: code.toUpperCase() });
@@ -76,9 +95,13 @@ async function createSubject(req, res, next) {
     const subject = await Subject.create({
       name,
       code,
-      teacherId,
+      teacherId: teacher._id,
       branch: branch.toUpperCase(),
       semester: parseInt(semester, 10),
+    });
+
+    await Teacher.findByIdAndUpdate(teacher._id, {
+      $addToSet: { subjects: subject._id },
     });
 
     res.status(201).json({
@@ -98,7 +121,8 @@ async function createSubject(req, res, next) {
 async function updateSubject(req, res, next) {
   try {
     const { id } = req.params;
-    const { name, branch, semester } = req.body;
+    const { name, code, branch, semester } = req.body;
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
 
     const subject = await Subject.findById(id);
 
@@ -106,11 +130,21 @@ async function updateSubject(req, res, next) {
       return res.status(404).json({ error: 'SUBJECT_NOT_FOUND' });
     }
 
-    if (subject.teacherId.toString() !== req.user.sub) {
+    if (!isOwnedBy(subject, ownerIds)) {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
     if (name) subject.name = name;
+    if (code && code.toUpperCase() !== subject.code) {
+      const existing = await Subject.findOne({ code: code.toUpperCase(), _id: { $ne: id } });
+      if (existing) {
+        return res.status(409).json({
+          error: 'DUPLICATE_CODE',
+          message: 'Subject code already exists',
+        });
+      }
+      subject.code = code.toUpperCase();
+    }
     if (branch) subject.branch = branch.toUpperCase();
     if (semester) subject.semester = parseInt(semester, 10);
 
@@ -133,6 +167,7 @@ async function updateSubject(req, res, next) {
 async function deleteSubject(req, res, next) {
   try {
     const { id } = req.params;
+    const { teacher, ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
 
     const subject = await Subject.findById(id);
 
@@ -140,7 +175,7 @@ async function deleteSubject(req, res, next) {
       return res.status(404).json({ error: 'SUBJECT_NOT_FOUND' });
     }
 
-    if (subject.teacherId.toString() !== req.user.sub) {
+    if (!isOwnedBy(subject, ownerIds)) {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
@@ -151,6 +186,7 @@ async function deleteSubject(req, res, next) {
     );
 
     await Subject.findByIdAndDelete(id);
+    await Teacher.findByIdAndUpdate(teacher._id, { $pull: { subjects: id } });
 
     res.json({ message: 'Subject deleted' });
   } catch (err) {
@@ -167,6 +203,7 @@ async function enrollStudents(req, res, next) {
   try {
     const { id } = req.params;
     const { studentIds } = req.body;
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
 
     const subject = await Subject.findById(id);
 
@@ -174,7 +211,7 @@ async function enrollStudents(req, res, next) {
       return res.status(404).json({ error: 'SUBJECT_NOT_FOUND' });
     }
 
-    if (subject.teacherId.toString() !== req.user.sub) {
+    if (!isOwnedBy(subject, ownerIds)) {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
@@ -205,6 +242,7 @@ async function unenrollStudents(req, res, next) {
   try {
     const { id } = req.params;
     const { studentIds } = req.body;
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
 
     const subject = await Subject.findById(id);
 
@@ -212,7 +250,7 @@ async function unenrollStudents(req, res, next) {
       return res.status(404).json({ error: 'SUBJECT_NOT_FOUND' });
     }
 
-    if (subject.teacherId.toString() !== req.user.sub) {
+    if (!isOwnedBy(subject, ownerIds)) {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
@@ -242,6 +280,7 @@ async function getAvailableStudents(req, res, next) {
   try {
     const { id } = req.params;
     const { branch, semester } = req.query;
+    const { ownerIds } = await getTeacherIdentityByUserId(req.user.sub);
 
     const subject = await Subject.findById(id);
 
@@ -249,7 +288,7 @@ async function getAvailableStudents(req, res, next) {
       return res.status(404).json({ error: 'SUBJECT_NOT_FOUND' });
     }
 
-    if (subject.teacherId.toString() !== req.user.sub) {
+    if (!isOwnedBy(subject, ownerIds)) {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
@@ -278,18 +317,33 @@ async function getAvailableStudents(req, res, next) {
  */
 async function getStudentSubjects(req, res, next) {
   try {
-    const userId = req.user.sub;
-
-    // Find student by userId field, not by student's _id
-    const student = await Student.findOne({ userId })
+    const { student } = await getStudentIdentityByUserId(req.user.sub);
+    const populatedStudent = await Student.findById(student._id)
       .populate('subjects')
       .select('subjects');
 
-    if (!student) {
+    if (!populatedStudent) {
       return res.status(404).json({ error: 'STUDENT_NOT_FOUND' });
     }
 
-    res.json({ subjects: student.subjects || [] });
+    res.json({ subjects: populatedStudent.subjects || [] });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Get available subjects for students to browse
+ * GET /api/subjects/available
+ */
+async function getAvailableSubjects(req, res, next) {
+  try {
+    const subjects = await Subject.find({})
+      .populate('teacherId', 'name department')
+      .sort({ name: 1 })
+      .limit(200);
+
+    res.json({ subjects });
   } catch (err) {
     next(err);
   }
@@ -305,4 +359,5 @@ module.exports = {
   unenrollStudents,
   getAvailableStudents,
   getStudentSubjects,
+  getAvailableSubjects,
 };

@@ -2,6 +2,13 @@ const Student = require('../models/Student');
 const AttendanceRecord = require('../models/AttendanceRecord');
 const AttendanceStats = require('../models/AttendanceStats');
 const Subject = require('../models/Subject');
+const { getTeacherIdentityByUserId } = require('../utils/profileResolver');
+
+async function getOwnedSubjectIds(userId) {
+  const { ownerIds } = await getTeacherIdentityByUserId(userId);
+  const subjects = await Subject.find({ teacherId: { $in: ownerIds } }).select('_id');
+  return subjects.map((s) => s._id.toString());
+}
 
 /**
  * Get all students
@@ -11,13 +18,30 @@ const Subject = require('../models/Subject');
 async function getAllStudents(req, res, next) {
   try {
     const { subjectId, branch, semester, page = 1, limit = 20 } = req.query;
+    const ownedSubjectIds = await getOwnedSubjectIds(req.user.sub);
 
     const query = {};
 
     if (branch) query.branch = branch.toUpperCase();
     if (semester) query.semester = parseInt(semester, 10);
     if (subjectId) {
+      if (!ownedSubjectIds.includes(subjectId.toString())) {
+        return res.status(403).json({ error: 'FORBIDDEN' });
+      }
       query.subjects = subjectId;
+    } else {
+      if (ownedSubjectIds.length === 0) {
+        return res.json({
+          students: [],
+          pagination: {
+            page: parseInt(page, 10),
+            limit: parseInt(limit, 10),
+            total: 0,
+            pages: 0,
+          },
+        });
+      }
+      query.subjects = { $in: ownedSubjectIds };
     }
 
     const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
@@ -53,11 +77,19 @@ async function getAllStudents(req, res, next) {
 async function getStudentById(req, res, next) {
   try {
     const { id } = req.params;
+    const ownedSubjectIds = await getOwnedSubjectIds(req.user.sub);
 
     const student = await Student.findById(id).populate('subjects', 'name code');
 
     if (!student) {
       return res.status(404).json({ error: 'STUDENT_NOT_FOUND' });
+    }
+
+    const hasCommonSubject = student.subjects.some((subject) =>
+      ownedSubjectIds.includes(subject._id.toString())
+    );
+    if (!hasCommonSubject) {
+      return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
     res.json({ student });
@@ -75,10 +107,31 @@ async function getStudentAttendance(req, res, next) {
   try {
     const { id } = req.params;
     const { subjectId, startDate, endDate, page = 1, limit = 50 } = req.query;
+    const ownedSubjectIds = await getOwnedSubjectIds(req.user.sub);
+    const student = await Student.findById(id).select('subjects');
+
+    if (!student) {
+      return res.status(404).json({ error: 'STUDENT_NOT_FOUND' });
+    }
+
+    const allowedSubjects = student.subjects
+      .map((s) => s.toString())
+      .filter((s) => ownedSubjectIds.includes(s));
+
+    if (allowedSubjects.length === 0) {
+      return res.status(403).json({ error: 'FORBIDDEN' });
+    }
 
     const query = { studentId: id };
 
-    if (subjectId) query.subjectId = subjectId;
+    if (subjectId) {
+      if (!allowedSubjects.includes(subjectId.toString())) {
+        return res.status(403).json({ error: 'FORBIDDEN' });
+      }
+      query.subjectId = subjectId;
+    } else {
+      query.subjectId = { $in: allowedSubjects };
+    }
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) query.createdAt.$gte = new Date(startDate);
@@ -120,12 +173,32 @@ async function getStudentStats(req, res, next) {
   try {
     const { id } = req.params;
     const { subjectId } = req.query;
+    const ownedSubjectIds = await getOwnedSubjectIds(req.user.sub);
+    const student = await Student.findById(id).select('name rollNumber branch semester subjects');
+
+    if (!student) {
+      return res.status(404).json({ error: 'STUDENT_NOT_FOUND' });
+    }
+
+    const allowedSubjects = student.subjects
+      .map((s) => s.toString())
+      .filter((s) => ownedSubjectIds.includes(s));
+
+    if (allowedSubjects.length === 0) {
+      return res.status(403).json({ error: 'FORBIDDEN' });
+    }
 
     const query = { studentId: id };
-    if (subjectId) query.subjectId = subjectId;
+    if (subjectId) {
+      if (!allowedSubjects.includes(subjectId.toString())) {
+        return res.status(403).json({ error: 'FORBIDDEN' });
+      }
+      query.subjectId = subjectId;
+    } else {
+      query.subjectId = { $in: allowedSubjects };
+    }
 
     const stats = await AttendanceStats.find(query).populate('subjectId', 'name code');
-    const student = await Student.findById(id);
 
     // Calculate overall
     const overall = stats.reduce(
@@ -168,6 +241,7 @@ async function addStudentToSubject(req, res, next) {
   try {
     const { id } = req.params;
     const { subjectId } = req.body;
+    const ownedSubjectIds = await getOwnedSubjectIds(req.user.sub);
 
     const student = await Student.findById(id);
     if (!student) {
@@ -177,6 +251,10 @@ async function addStudentToSubject(req, res, next) {
     const subject = await Subject.findById(subjectId);
     if (!subject) {
       return res.status(404).json({ error: 'SUBJECT_NOT_FOUND' });
+    }
+
+    if (!ownedSubjectIds.includes(subjectId.toString())) {
+      return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
     if (!student.subjects.includes(subjectId)) {

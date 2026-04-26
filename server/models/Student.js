@@ -52,8 +52,6 @@ const studentSchema = new mongoose.Schema(
 );
 
 // Indexes
-studentSchema.index({ rollNumber: 1 }, { unique: true });
-studentSchema.index({ userId: 1 }, { unique: true });
 studentSchema.index({ branch: 1, semester: 1 });
 
 const Student = mongoose.model('Student', studentSchema);

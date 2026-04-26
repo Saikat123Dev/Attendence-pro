@@ -64,7 +64,10 @@ async function verifyRefreshToken(token) {
   });
 
   if (!storedToken) {
-    throw new Error('TOKEN_NOT_FOUND');
+    throw Object.assign(new Error('Refresh token not found or already revoked'), {
+      status: 401,
+      error: 'TOKEN_NOT_FOUND',
+    });
   }
 
   return decoded;
@@ -109,7 +112,11 @@ async function register(userData) {
  * @returns {Object} { user }
  */
 async function completeProfile(userId, profileData) {
-  const { role, ...roleSpecificData } = profileData;
+  const normalizedRole = profileData.role?.toUpperCase();
+  const { role, ...roleSpecificData } = {
+    ...profileData,
+    role: normalizedRole,
+  };
 
   const user = await User.findById(userId);
   if (!user) {

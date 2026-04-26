@@ -37,7 +37,6 @@ const subjectSchema = new mongoose.Schema(
   }
 );
 
-subjectSchema.index({ code: 1 }, { unique: true });
 subjectSchema.index({ teacherId: 1 });
 subjectSchema.index({ branch: 1, semester: 1 });
 

@@ -5,7 +5,7 @@ export interface User {
   _id: string;
   email: string;
   name: string;
-  role: UserRole;
+  role?: UserRole | null;
   isActive: boolean;
   createdAt: string;
   profile?: StudentProfile | TeacherProfile;

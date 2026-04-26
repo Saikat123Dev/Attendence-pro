@@ -1,9 +1,8 @@
 /**
- * Reusable Avatar Component - AttendX Dark Pro Theme
+ * Reusable Avatar Component
  */
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors } from '../../constants/theme';
 
 interface AvatarProps {
   name: string;
@@ -25,14 +24,14 @@ function getInitials(name: string): string {
 function getColorFromName(name: string): string {
   const colorOptions = [
     '#4F6EF7',
-    '#7C3AED',
-    '#0891B2',
-    '#10B981',
-    '#F59E0B',
-    '#EF4444',
-    '#EC4899',
-    '#6366F1',
-    '#8B5CF6',
+    '#2A9D8F',
+    '#3D5A80',
+    '#E76F51',
+    '#F4A261',
+    '#6A4C93',
+    '#118AB2',
+    '#8E6C88',
+    '#7A8B5A',
   ];
 
   let hash = 0;
@@ -62,9 +61,9 @@ export function Avatar({ name, size = 'md', style, type = 'student' }: AvatarPro
 
   const getTypeColors = () => {
     if (type === 'teacher') {
-      return { bg: '#7C3AED20', border: '#7C3AED50' };
+      return { border: '#7B93FC' };
     }
-    return { bg: '#4F6EF720', border: '#4F6EF750' };
+    return { border: '#43C49A' };
   };
 
   const sizeStyle = getSizeStyle();
@@ -101,6 +100,5 @@ const styles = StyleSheet.create({
   text: {
     color: '#FFFFFF',
     fontWeight: '700',
-    letterSpacing: 0.5,
   },
 });

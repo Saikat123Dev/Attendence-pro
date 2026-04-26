@@ -23,7 +23,6 @@ const refreshTokenSchema = new mongoose.Schema(
 );
 
 refreshTokenSchema.index({ userId: 1 });
-refreshTokenSchema.index({ token: 1 }, { unique: true });
 refreshTokenSchema.index({ expiresAt: 1 }, { expires: '7d' }); // TTL index auto-deletes after expiry
 
 const RefreshToken = mongoose.model('RefreshToken', refreshTokenSchema);

@@ -11,15 +11,15 @@ import {
   RefreshControl,
   TouchableOpacity,
   Pressable,
-  Dimensions,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
 import { Card, Badge, Avatar, Loading, EmptyState } from '@/components/ui';
 import { SessionCard } from '@/components/attendance/session-card';
-import { colors, spacing, fontSize, borderRadius, shadows } from '@/constants/theme';
+import { colors, spacing, fontSize } from '@/constants/theme';
 import { StudentProfile, TeacherProfile, Subject } from '@/types';
 
 // AttendX Dark Pro Theme Colors
@@ -37,8 +37,6 @@ const theme = {
   border: '#1E2235',
   borderLight: '#252B42',
 };
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Get time-based greeting
 function getGreeting(): string {
@@ -164,7 +162,7 @@ export default function HomeScreen() {
                 style={[styles.statCard, { borderColor: theme.border }]}
               >
                 <View style={[styles.statIconBg, { backgroundColor: theme.primary + '20' }]}>
-                  <Text style={styles.statIcon}>📊</Text>
+                  <MaterialIcons name="bar-chart" size={18} color={theme.primary} />
                 </View>
                 <Text style={styles.statNumber}>{overview?.totalSessions || 0}</Text>
                 <Text style={styles.statLabel}>Total Sessions</Text>
@@ -179,7 +177,7 @@ export default function HomeScreen() {
                 style={[styles.statCard, { borderColor: theme.border }]}
               >
                 <View style={[styles.statIconBg, { backgroundColor: theme.success + '20' }]}>
-                  <Text style={styles.statIcon}>📅</Text>
+                  <MaterialIcons name="today" size={18} color={theme.success} />
                 </View>
                 <Text style={[styles.statNumber, { color: theme.success }]}>
                   {overview?.todaySessions || 0}
@@ -196,7 +194,7 @@ export default function HomeScreen() {
                 style={[styles.statCard, { borderColor: theme.border }]}
               >
                 <View style={[styles.statIconBg, { backgroundColor: '#9333EA' + '20' }]}>
-                  <Text style={styles.statIcon}>👥</Text>
+                  <MaterialIcons name="groups" size={18} color="#A855F7" />
                 </View>
                 <Text style={[styles.statNumber, { color: '#A855F7' }]}>
                   {overview?.totalStudents || 0}
@@ -213,7 +211,7 @@ export default function HomeScreen() {
                 style={[styles.statCard, { borderColor: theme.border }]}
               >
                 <View style={[styles.statIconBg, { backgroundColor: theme.warning + '20' }]}>
-                  <Text style={styles.statIcon}>✓</Text>
+                  <MaterialIcons name="check-circle" size={18} color={theme.warning} />
                 </View>
                 <Text style={[styles.statNumber, { color: theme.warning }]}>
                   {overview?.todayAttendanceMarked || 0}
@@ -238,7 +236,7 @@ export default function HomeScreen() {
               <EmptyState
                 title="No active sessions"
                 message="Start a new attendance session from the Scan tab"
-                icon="📭"
+                icon={<MaterialIcons name="inbox" size={28} color={theme.textSecondary} />}
               />
             </Card>
           ) : (
@@ -270,7 +268,7 @@ export default function HomeScreen() {
                 colors={[theme.primary + '20', theme.primary + '10']}
                 style={styles.actionIcon}
               >
-                <Text style={styles.actionIconText}>▶</Text>
+                <MaterialIcons name="play-arrow" size={20} color={theme.primary} />
               </LinearGradient>
               <Text style={styles.actionLabel}>Start Session</Text>
             </Pressable>
@@ -285,7 +283,7 @@ export default function HomeScreen() {
                 colors={[theme.success + '20', theme.success + '10']}
                 style={styles.actionIcon}
               >
-                <Text style={styles.actionIconText}>📈</Text>
+                <MaterialIcons name="insights" size={20} color={theme.success} />
               </LinearGradient>
               <Text style={styles.actionLabel}>Analytics</Text>
             </Pressable>
@@ -300,7 +298,7 @@ export default function HomeScreen() {
                 colors={[theme.warning + '20', theme.warning + '10']}
                 style={styles.actionIcon}
               >
-                <Text style={styles.actionIconText}>⚙</Text>
+                <MaterialIcons name="tune" size={20} color={theme.warning} />
               </LinearGradient>
               <Text style={styles.actionLabel}>Manage</Text>
             </Pressable>
@@ -315,7 +313,7 @@ export default function HomeScreen() {
                 colors={['#9333EA20', '#9333EA10']}
                 style={styles.actionIcon}
               >
-                <Text style={styles.actionIconText}>👥</Text>
+                <MaterialIcons name="groups-2" size={20} color="#A855F7" />
               </LinearGradient>
               <Text style={styles.actionLabel}>Students</Text>
             </Pressable>
@@ -383,7 +381,7 @@ export default function HomeScreen() {
               colors={[theme.primary + '20', theme.primary + '10']}
               style={styles.actionIcon}
             >
-              <Text style={styles.actionIconText}>📷</Text>
+              <MaterialIcons name="qr-code-scanner" size={20} color={theme.primary} />
             </LinearGradient>
             <Text style={styles.actionLabel}>Scan QR</Text>
           </Pressable>
@@ -398,7 +396,7 @@ export default function HomeScreen() {
               colors={[theme.success + '20', theme.success + '10']}
               style={styles.actionIcon}
             >
-              <Text style={styles.actionIconText}>📋</Text>
+              <MaterialIcons name="fact-check" size={20} color={theme.success} />
             </LinearGradient>
             <Text style={styles.actionLabel}>Attendance</Text>
           </Pressable>
@@ -412,7 +410,7 @@ export default function HomeScreen() {
               colors={[theme.warning + '20', theme.warning + '10']}
               style={styles.actionIcon}
             >
-              <Text style={styles.actionIconText}>📚</Text>
+              <MaterialIcons name="menu-book" size={20} color={theme.warning} />
             </LinearGradient>
             <Text style={styles.actionLabel}>Subjects</Text>
           </Pressable>
@@ -426,7 +424,7 @@ export default function HomeScreen() {
               colors={['#9333EA20', '#9333EA10']}
               style={styles.actionIcon}
             >
-              <Text style={styles.actionIconText}>📊</Text>
+              <MaterialIcons name="analytics" size={20} color="#A855F7" />
             </LinearGradient>
             <Text style={styles.actionLabel}>Reports</Text>
           </Pressable>
