@@ -3,7 +3,7 @@
  * Teacher: QR Display with glowing border
  * Student: Camera viewfinder with corner brackets
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -52,51 +52,73 @@ export default function ScanScreen() {
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [isStarting, setIsStarting] = useState(false);
-  const [qrIntervalId, setQrIntervalId] = useState<ReturnType<typeof setInterval> | null>(null);
+  const qrIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isTeacher = user?.role === 'TEACHER';
 
-  useEffect(() => {
-    if (isTeacher) {
-      loadActiveSessions();
-      loadSubjects();
-    }
-  }, []);
-
-  useEffect(() => {
-    // Clear any existing interval
-    if (qrIntervalId) {
-      clearInterval(qrIntervalId);
-      setQrIntervalId(null);
-    }
-
-    if (isTeacher && selectedSession) {
-      const interval = setInterval(fetchQRToken, 2000);
-      setQrIntervalId(interval);
-      return () => {
-        clearInterval(interval);
-        setQrIntervalId(null);
-      };
-    }
-  }, [selectedSession, isTeacher]);
-
-  async function loadSubjects() {
+  const loadSubjects = useCallback(async () => {
     try {
       const res = await apiService.getMySubjects();
       setSubjects(res.subjects || []);
     } catch (err: any) {
       console.error('Error loading subjects:', err);
     }
-  }
+  }, []);
 
-  async function loadActiveSessions() {
+  const loadActiveSessions = useCallback(async () => {
     try {
       const res = await apiService.getActiveSessions();
       setActiveSessions(res.sessions || []);
     } catch (err) {
       console.error('Error loading sessions:', err);
     }
-  }
+  }, []);
+
+  const fetchQRToken = useCallback(async (sessionIdOverride?: string) => {
+    const targetSessionId = sessionIdOverride || selectedSession?._id;
+    // Don't fetch if no session or session is being stopped
+    if (!targetSessionId) return;
+    try {
+      const res = await apiService.getSessionQR(targetSessionId);
+      setQrData(res.qrData);
+    } catch (err: any) {
+      // Silently handle errors when session is stopped/deactivated
+      const status = err.response?.status;
+      const errorMsg = err.response?.data?.error || err.response?.data?.message;
+
+      // Handle SESSION_INACTIVE, 400, 404 - session was stopped
+      if (status === 400 || status === 404 || errorMsg === 'SESSION_INACTIVE') {
+        setSelectedSession(null);
+        setQrData(null);
+        return;
+      }
+      console.error('Error fetching QR:', err);
+    }
+  }, [selectedSession?._id]);
+
+  useEffect(() => {
+    if (isTeacher) {
+      loadActiveSessions();
+      loadSubjects();
+    }
+  }, [isTeacher, loadActiveSessions, loadSubjects]);
+
+  useEffect(() => {
+    if (qrIntervalRef.current) {
+      clearInterval(qrIntervalRef.current);
+      qrIntervalRef.current = null;
+    }
+
+    if (isTeacher && selectedSession) {
+      qrIntervalRef.current = setInterval(() => fetchQRToken(), 2000);
+      return () => {
+        if (qrIntervalRef.current) {
+          clearInterval(qrIntervalRef.current);
+          qrIntervalRef.current = null;
+        }
+      };
+    }
+  }, [fetchQRToken, selectedSession, isTeacher]);
 
   async function startSession(subjectId: string) {
     setIsStarting(true);
@@ -119,28 +141,6 @@ export default function ScanScreen() {
       Alert.alert('Error', errorMsg);
     } finally {
       setIsStarting(false);
-    }
-  }
-
-  async function fetchQRToken(sessionIdOverride?: string) {
-    const targetSessionId = sessionIdOverride || selectedSession?._id;
-    // Don't fetch if no session or session is being stopped
-    if (!targetSessionId) return;
-    try {
-      const res = await apiService.getSessionQR(targetSessionId);
-      setQrData(res.qrData);
-    } catch (err: any) {
-      // Silently handle errors when session is stopped/deactivated
-      const status = err.response?.status;
-      const errorMsg = err.response?.data?.error || err.response?.data?.message;
-
-      // Handle SESSION_INACTIVE, 400, 404 - session was stopped
-      if (status === 400 || status === 404 || errorMsg === 'SESSION_INACTIVE') {
-        setSelectedSession(null);
-        setQrData(null);
-        return;
-      }
-      console.error('Error fetching QR:', err);
     }
   }
 

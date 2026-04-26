@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
-import { colors, spacing, borderRadius } from '../../constants/theme';
+import { spacing } from '../../constants/theme';
 import { IconSymbol } from './icon-symbol';
 
 export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {

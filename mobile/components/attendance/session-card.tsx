@@ -2,9 +2,9 @@
  * Session Card Component - AttendX Dark Pro Theme
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Badge } from '../ui/badge';
-import { colors, spacing, fontSize, borderRadius, shadows } from '../../constants/theme';
+import { spacing, fontSize, shadows } from '../../constants/theme';
 
 interface SessionCardProps {
   subjectName: string;
@@ -30,10 +30,13 @@ export function SessionCard({
   const isActive = status === 'ACTIVE';
 
   return (
-    <TouchableOpacity
-      style={[styles.container, isActive && styles.activeContainer]}
+    <Pressable
+      style={({ pressed }) => [
+        styles.container,
+        isActive && styles.activeContainer,
+        pressed && styles.pressed,
+      ]}
       onPress={onPress}
-      activeOpacity={0.8}
     >
       <View style={styles.header}>
         <View style={styles.subjectInfo}>
@@ -77,14 +80,17 @@ export function SessionCard({
         {isActive && (
           <View style={styles.actions}>
             {onStop && (
-              <TouchableOpacity style={styles.stopButton} onPress={onStop} activeOpacity={0.8}>
+              <Pressable
+                style={({ pressed }) => [styles.stopButton, pressed && styles.stopButtonPressed]}
+                onPress={onStop}
+              >
                 <Text style={styles.stopButtonText}>Stop</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
         )}
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -106,6 +112,10 @@ const styles = StyleSheet.create({
   activeContainer: {
     borderColor: '#10B981',
     borderWidth: 1.5,
+  },
+  pressed: {
+    transform: [{ scale: 0.985 }],
+    opacity: 0.9,
   },
   header: {
     flexDirection: 'row',
@@ -223,6 +233,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 12,
+  },
+  stopButtonPressed: {
+    transform: [{ scale: 0.96 }],
+    opacity: 0.85,
   },
   stopButtonText: {
     color: '#EF4444',

@@ -9,35 +9,35 @@
 
 export const colors = {
   // Backgrounds
-  background: '#0D0D0D',
-  surface: '#1A1A1A',
-  surfaceElevated: '#242424',
-  surfaceHighlight: '#2D2D2D',
+  background: '#0A0D14',
+  surface: '#0F1320',
+  surfaceElevated: '#141828',
+  surfaceHighlight: '#1A2035',
 
   // Borders
-  border: '#333333',
-  borderLight: '#3A3A3C',
+  border: '#1E2235',
+  borderLight: '#252B42',
 
   // Primary
-  primary: '#4A9EFF',
-  primaryPressed: '#3A8AE8',
-  primaryLight: '#4A9EFF20',
+  primary: '#4F6EF7',
+  primaryPressed: '#3D5FE8',
+  primaryLight: '#4F6EF720',
 
   // Text
-  text: '#FFFFFF',
-  textSecondary: '#8E8E93',
-  textMuted: '#5C5C5C',
-  placeholder: '#636366',
+  text: '#F0F2FF',
+  textSecondary: '#C0C5E0',
+  textMuted: '#8090C0',
+  placeholder: '#6B7194',
 
   // Status
-  success: '#30D158',
-  successLight: '#30D15820',
-  warning: '#FFD60A',
-  warningLight: '#FFD60A20',
-  error: '#FF453A',
-  errorLight: '#FF453A20',
-  info: '#4A9EFF',
-  infoLight: '#4A9EFF20',
+  success: '#10B981',
+  successLight: '#10B98120',
+  warning: '#F59E0B',
+  warningLight: '#F59E0B20',
+  error: '#EF4444',
+  errorLight: '#EF444420',
+  info: '#06B6D4',
+  infoLight: '#06B6D420',
 
   // Other
   white: '#FFFFFF',
@@ -89,9 +89,9 @@ export const fontSize = {
 
 export const borderRadius = {
   sm: 6,
-  md: 10,
-  lg: 14,
-  xl: 18,
+  md: 12,
+  lg: 16,
+  xl: 20,
   full: 9999,
 };
 

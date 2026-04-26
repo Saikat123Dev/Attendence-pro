@@ -72,6 +72,8 @@ const styles = StyleSheet.create({
   badge: {
     borderRadius: 999,
     alignSelf: 'flex-start',
+    minHeight: 24,
+    justifyContent: 'center',
   },
   badgeSm: {
     paddingHorizontal: 10,
@@ -82,7 +84,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   text: {
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
   textSm: {
     fontSize: 10,

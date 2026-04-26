@@ -5,7 +5,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Card } from '../ui/card';
-import { colors, spacing, fontSize, borderRadius } from '../../constants/theme';
+import { spacing, fontSize, borderRadius } from '../../constants/theme';
 
 interface StatsCardProps {
   percentage: number;

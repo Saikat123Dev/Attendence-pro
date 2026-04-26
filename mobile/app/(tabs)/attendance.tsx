@@ -3,7 +3,7 @@
  * Teacher: Session management with gradient stats
  * Student: Attendance records with filter chips and status badges
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   ScrollView,
   RefreshControl,
   Pressable,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,15 +48,13 @@ export default function AttendanceScreen() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedSessionDetails, setSelectedSessionDetails] = useState<any>(null);
+  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
 
   const isTeacher = user?.role === 'TEACHER';
   const accentColor = isTeacher ? theme.primary : theme.success;
 
-  useEffect(() => {
-    loadData();
-  }, [selectedSubject, isTeacher]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       if (isTeacher) {
         const historyRes = await apiService.getSessionHistory();
@@ -72,12 +72,34 @@ export default function AttendanceScreen() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [isTeacher, selectedSubject]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   async function onRefresh() {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
+  }
+
+  async function openSessionDetails(session: any) {
+    setSelectedSessionDetails({
+      session,
+      summary: session.attendanceCount || { total: 0, present: 0, absent: 0 },
+      presentStudents: [],
+      absentStudents: [],
+    });
+    setIsDetailsLoading(true);
+    try {
+      const res = await apiService.getSessionDetails(session._id);
+      setSelectedSessionDetails(res);
+    } catch (err) {
+      console.error('Error loading session details:', err);
+    } finally {
+      setIsDetailsLoading(false);
+    }
   }
 
   if (loading) {
@@ -89,109 +111,247 @@ export default function AttendanceScreen() {
     const activeSessions = sessions.filter(s => s.status === 'ACTIVE');
 
     return (
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={accentColor}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Active Sessions Alert */}
-        {activeSessions.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.alertBanner}>
-              <View style={styles.alertDot} />
-              <Text style={styles.alertText}>{activeSessions.length} Active Session{activeSessions.length > 1 ? 's' : ''}</Text>
-              <Pressable
-                style={styles.alertAction}
-                onPress={() => router.push('/(tabs)/scan')}
-              >
-                <Text style={styles.alertActionText}>View →</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-
-        {/* Recent Sessions */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Sessions</Text>
-            <Text style={styles.sessionCount}>{sessions.length} total</Text>
-          </View>
-          {sessions.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <View style={styles.emptyIconBox}>
-                <MaterialIcons name="inbox" size={30} color={theme.primary} />
-              </View>
-              <Text style={styles.emptyTitle}>No Sessions Yet</Text>
-              <Text style={styles.emptyText}>Start your first attendance session to see it here</Text>
-              <Pressable
-                style={styles.emptyButton}
-                onPress={() => router.push('/(tabs)/scan')}
-              >
-                <Text style={styles.emptyButtonText}>Start Session</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.sessionsList}>
-              {sessions.slice(0, 15).map((session) => (
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.contentContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={accentColor}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Active Sessions Alert */}
+          {activeSessions.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.alertBanner}>
+                <View style={styles.alertDot} />
+                <Text style={styles.alertText}>{activeSessions.length} Active Session{activeSessions.length > 1 ? 's' : ''}</Text>
                 <Pressable
-                  key={session._id}
-                  style={({ pressed }) => [
-                    styles.sessionItem,
-                    pressed && styles.sessionItemPressed,
-                  ]}
+                  style={styles.alertAction}
                   onPress={() => router.push('/(tabs)/scan')}
                 >
-                  <View style={styles.sessionItemContent}>
-                    <View style={styles.sessionItemLeft}>
-                      <View style={[styles.sessionItemIconBg, { backgroundColor: session.status === 'ACTIVE' ? theme.success + '20' : theme.primary + '20' }]}>
-                        <MaterialIcons
-                          name="menu-book"
-                          size={18}
-                          color={session.status === 'ACTIVE' ? theme.success : theme.primary}
-                        />
-                      </View>
-                      <View style={styles.sessionItemInfo}>
-                        <Text style={styles.sessionSubject}>
-                          {(session.subjectId as any)?.name || 'Unknown'}
-                        </Text>
-                        <Text style={[styles.sessionCode, { color: session.status === 'ACTIVE' ? theme.success : theme.primary }]}>
-                          {(session.subjectId as any)?.code}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.sessionItemRight}>
-                      <Badge
-                        text={session.status}
-                        variant={session.status === 'ACTIVE' ? 'success' : 'default'}
-                        size="sm"
-                      />
-                      <Text style={styles.sessionDate}>
-                        {new Date(session.startedAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </Text>
-                      <Text style={styles.sessionTime}>
-                        {new Date(session.startedAt).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Text>
-                    </View>
-                  </View>
+                  <Text style={styles.alertActionText}>View QR</Text>
                 </Pressable>
-              ))}
+              </View>
             </View>
           )}
-        </View>
-      </ScrollView>
+
+          {/* Recent Sessions */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent Sessions</Text>
+              <Text style={styles.sessionCount}>{sessions.length} total</Text>
+            </View>
+            {sessions.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <View style={styles.emptyIconBox}>
+                  <MaterialIcons name="inbox" size={30} color={theme.primary} />
+                </View>
+                <Text style={styles.emptyTitle}>No Sessions Yet</Text>
+                <Text style={styles.emptyText}>Start your first attendance session to see it here</Text>
+                <Pressable
+                  style={styles.emptyButton}
+                  onPress={() => router.push('/(tabs)/scan')}
+                >
+                  <Text style={styles.emptyButtonText}>Start Session</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.sessionsList}>
+                {sessions.slice(0, 15).map((session) => (
+                  <Pressable
+                    key={session._id}
+                    style={({ pressed }) => [
+                      styles.sessionItem,
+                      pressed && styles.sessionItemPressed,
+                    ]}
+                    onPress={() => openSessionDetails(session)}
+                  >
+                    <View style={styles.sessionItemContent}>
+                      <View style={styles.sessionItemLeft}>
+                        <View style={[styles.sessionItemIconBg, { backgroundColor: session.status === 'ACTIVE' ? theme.success + '20' : theme.primary + '20' }]}>
+                          <MaterialIcons
+                            name="menu-book"
+                            size={18}
+                            color={session.status === 'ACTIVE' ? theme.success : theme.primary}
+                          />
+                        </View>
+                        <View style={styles.sessionItemInfo}>
+                          <Text style={styles.sessionSubject}>
+                            {(session.subjectId as any)?.name || 'Unknown'}
+                          </Text>
+                          <Text style={[styles.sessionCode, { color: session.status === 'ACTIVE' ? theme.success : theme.primary }]}>
+                            {(session.subjectId as any)?.code}
+                          </Text>
+                          <View style={styles.sessionCounts}>
+                            <Text style={styles.sessionCountText}>
+                              {session.attendanceCount?.present || 0} present
+                            </Text>
+                            <Text style={styles.sessionCountText}>
+                              {session.attendanceCount?.absent || 0} absent
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      <View style={styles.sessionItemRight}>
+                        <Badge
+                          text={session.status}
+                          variant={session.status === 'ACTIVE' ? 'success' : 'default'}
+                          size="sm"
+                        />
+                        <Text style={styles.sessionDate}>
+                          {new Date(session.startedAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </Text>
+                        <Text style={styles.sessionTime}>
+                          {new Date(session.startedAt).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+        </ScrollView>
+
+        <Modal
+          visible={!!selectedSessionDetails}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setSelectedSessionDetails(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <Pressable
+              style={styles.modalBackdrop}
+              onPress={() => setSelectedSessionDetails(null)}
+            />
+            <View style={styles.detailsSheet}>
+              <View style={styles.detailsHeader}>
+                <View style={styles.detailsTitleBlock}>
+                  <Text style={styles.detailsTitle}>
+                    {(selectedSessionDetails?.session?.subjectId as any)?.name ||
+                      (selectedSessionDetails?.session?.subjectId as any)?.code ||
+                      'Session Details'}
+                  </Text>
+                  <Text style={styles.detailsSubtitle}>
+                    {selectedSessionDetails?.session?.startedAt
+                      ? new Date(selectedSessionDetails.session.startedAt).toLocaleString()
+                      : ''}
+                  </Text>
+                </View>
+                <Pressable onPress={() => setSelectedSessionDetails(null)}>
+                  <MaterialIcons name="close" size={22} color={theme.textSecondary} />
+                </Pressable>
+              </View>
+
+              {isDetailsLoading ? (
+                <View style={styles.detailsLoading}>
+                  <ActivityIndicator color={theme.primary} />
+                  <Text style={styles.detailsLoadingText}>Loading records...</Text>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.detailsStats}>
+                    <View style={styles.detailsStat}>
+                      <Text style={styles.detailsStatValue}>
+                        {selectedSessionDetails?.summary?.total || 0}
+                      </Text>
+                      <Text style={styles.detailsStatLabel}>Total</Text>
+                    </View>
+                    <View style={styles.detailsStatDivider} />
+                    <View style={styles.detailsStat}>
+                      <Text style={[styles.detailsStatValue, { color: theme.success }]}>
+                        {selectedSessionDetails?.summary?.present || 0}
+                      </Text>
+                      <Text style={styles.detailsStatLabel}>Present</Text>
+                    </View>
+                    <View style={styles.detailsStatDivider} />
+                    <View style={styles.detailsStat}>
+                      <Text style={[styles.detailsStatValue, { color: theme.danger }]}>
+                        {selectedSessionDetails?.summary?.absent || 0}
+                      </Text>
+                      <Text style={styles.detailsStatLabel}>Absent</Text>
+                    </View>
+                  </View>
+
+                  {selectedSessionDetails?.session?.status === 'ACTIVE' && (
+                    <Pressable
+                      style={styles.detailsQrButton}
+                      onPress={() => {
+                        setSelectedSessionDetails(null);
+                        router.push('/(tabs)/scan');
+                      }}
+                    >
+                      <MaterialIcons name="qr-code-2" size={18} color={colors.white} />
+                      <Text style={styles.detailsQrButtonText}>Display Live QR</Text>
+                    </Pressable>
+                  )}
+
+                  <ScrollView
+                    style={styles.detailsList}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <Text style={styles.detailsSectionTitle}>Present Students</Text>
+                    {(selectedSessionDetails?.presentStudents || []).length === 0 ? (
+                      <Text style={styles.detailsEmptyText}>No students marked present</Text>
+                    ) : (
+                      selectedSessionDetails.presentStudents.map((entry: any) => (
+                        <View key={entry._id} style={styles.detailsStudentRow}>
+                          <View style={[styles.detailsStudentAvatar, { backgroundColor: theme.success }]}>
+                            <Text style={styles.detailsStudentAvatarText}>
+                              {entry.student?.name?.charAt(0)?.toUpperCase() || '?'}
+                            </Text>
+                          </View>
+                          <View style={styles.detailsStudentInfo}>
+                            <Text style={styles.detailsStudentName}>{entry.student?.name || 'Student'}</Text>
+                            <Text style={styles.detailsStudentMeta}>
+                              {entry.student?.rollNumber || 'No roll'} •{' '}
+                              {entry.markedAt ? new Date(entry.markedAt).toLocaleTimeString() : 'Marked'}
+                            </Text>
+                          </View>
+                          <Badge text="Present" variant="success" size="sm" />
+                        </View>
+                      ))
+                    )}
+
+                    <Text style={styles.detailsSectionTitle}>Absent Students</Text>
+                    {(selectedSessionDetails?.absentStudents || []).length === 0 ? (
+                      <Text style={styles.detailsEmptyText}>No absent students recorded</Text>
+                    ) : (
+                      selectedSessionDetails.absentStudents.map((entry: any) => (
+                        <View key={entry._id} style={styles.detailsStudentRow}>
+                          <View style={[styles.detailsStudentAvatar, { backgroundColor: theme.danger }]}>
+                            <Text style={styles.detailsStudentAvatarText}>
+                              {entry.student?.name?.charAt(0)?.toUpperCase() || '?'}
+                            </Text>
+                          </View>
+                          <View style={styles.detailsStudentInfo}>
+                            <Text style={styles.detailsStudentName}>{entry.student?.name || 'Student'}</Text>
+                            <Text style={styles.detailsStudentMeta}>
+                              {entry.student?.rollNumber || 'No roll'}
+                            </Text>
+                          </View>
+                          <Badge text="Absent" variant="danger" size="sm" />
+                        </View>
+                      ))
+                    )}
+                  </ScrollView>
+                </>
+              )}
+            </View>
+          </View>
+        </Modal>
+      </View>
     );
   }
 
@@ -262,8 +422,8 @@ export default function AttendanceScreen() {
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <View style={[styles.statDot, { backgroundColor: theme.warning }]} />
-            <Text style={styles.statItemLabel}>Late</Text>
-            <Text style={styles.statItemValue}>{stats?.overall?.lateCount || 0}</Text>
+            <Text style={styles.statItemLabel}>Sessions</Text>
+            <Text style={styles.statItemValue}>{stats?.overall?.totalSessions || 0}</Text>
           </View>
         </View>
       </LinearGradient>
@@ -798,6 +958,10 @@ const styles = StyleSheet.create({
   sessionItem: {
     borderRadius: 14,
     overflow: 'hidden',
+    backgroundColor: theme.card,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: spacing.md,
   },
   sessionItemPressed: {
     opacity: 0.7,
@@ -842,6 +1006,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '600',
   },
+  sessionCounts: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  sessionCountText: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+    fontWeight: '600',
+  },
   sessionItemRight: {
     alignItems: 'flex-end',
     gap: spacing.xs,
@@ -864,5 +1038,155 @@ const styles = StyleSheet.create({
   },
   recordsList: {
     gap: spacing.sm,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.72)',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  detailsSheet: {
+    backgroundColor: theme.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: spacing.lg,
+    maxHeight: '86%',
+  },
+  detailsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  detailsTitleBlock: {
+    flex: 1,
+  },
+  detailsTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: '800',
+    color: theme.textPrimary,
+  },
+  detailsSubtitle: {
+    fontSize: fontSize.sm,
+    color: theme.textSecondary,
+    marginTop: spacing.xs,
+  },
+  detailsLoading: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl,
+    gap: spacing.sm,
+  },
+  detailsLoadingText: {
+    color: theme.textSecondary,
+    fontSize: fontSize.sm,
+  },
+  detailsStats: {
+    flexDirection: 'row',
+    backgroundColor: theme.background,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  detailsStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  detailsStatValue: {
+    fontSize: fontSize.xxl,
+    fontWeight: '800',
+    color: theme.textPrimary,
+  },
+  detailsStatLabel: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  detailsStatDivider: {
+    width: 1,
+    backgroundColor: theme.borderLight,
+    marginHorizontal: spacing.sm,
+  },
+  detailsQrButton: {
+    backgroundColor: theme.primary,
+    borderRadius: 12,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  detailsQrButtonText: {
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: fontSize.md,
+  },
+  detailsList: {
+    maxHeight: 440,
+  },
+  detailsSectionTitle: {
+    fontSize: fontSize.md,
+    fontWeight: '800',
+    color: theme.textPrimary,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  detailsEmptyText: {
+    color: theme.textSecondary,
+    fontSize: fontSize.sm,
+    backgroundColor: theme.background,
+    borderRadius: 10,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  detailsStudentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: theme.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  detailsStudentAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailsStudentAvatarText: {
+    color: colors.white,
+    fontWeight: '800',
+    fontSize: fontSize.sm,
+  },
+  detailsStudentInfo: {
+    flex: 1,
+  },
+  detailsStudentName: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: theme.textPrimary,
+  },
+  detailsStudentMeta: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+    marginTop: 2,
   },
 });

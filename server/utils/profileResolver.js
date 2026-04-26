@@ -24,7 +24,9 @@ async function getTeacherIdentityByUserId(userId) {
 }
 
 async function getStudentIdentityByUserId(userId) {
-  const student = await Student.findOne({ userId }).select('_id userId subjects');
+  const student = await Student.findOne({ userId }).select(
+    '_id userId subjects branch semester'
+  );
 
   if (!student) {
     throw Object.assign(new Error('STUDENT_PROFILE_NOT_FOUND'), {

@@ -4,6 +4,13 @@ const AttendanceStats = require('../models/AttendanceStats');
 const Subject = require('../models/Subject');
 const { getTeacherIdentityByUserId } = require('../utils/profileResolver');
 
+function isSubjectCompatibleWithStudent(subject, student) {
+  return (
+    subject.branch === student.branch &&
+    Number(subject.semester) === Number(student.semester)
+  );
+}
+
 async function getOwnedSubjectIds(userId) {
   const { ownerIds } = await getTeacherIdentityByUserId(userId);
   const subjects = await Subject.find({ teacherId: { $in: ownerIds } }).select('_id');
@@ -257,7 +264,18 @@ async function addStudentToSubject(req, res, next) {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
-    if (!student.subjects.includes(subjectId)) {
+    if (!isSubjectCompatibleWithStudent(subject, student)) {
+      return res.status(400).json({
+        error: 'INCOMPATIBLE_STUDENT',
+        message: 'Student must match the subject branch and semester',
+      });
+    }
+
+    const alreadyEnrolled = student.subjects.some(
+      (studentSubjectId) => studentSubjectId.toString() === subjectId.toString()
+    );
+
+    if (!alreadyEnrolled) {
       student.subjects.push(subjectId);
       await student.save();
     }

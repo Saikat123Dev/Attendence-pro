@@ -2,7 +2,7 @@
  * Students Screen - AttendX Dark Pro Theme
  * Teacher: View and manage enrolled students
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -42,6 +42,8 @@ export default function StudentsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [studentListVersion, setStudentListVersion] = useState(0);
 
   useEffect(() => {
     loadSubjects();
@@ -75,8 +77,17 @@ export default function StudentsScreen() {
 
   function openEnrollModal(subject: any) {
     setSelectedSubject(subject);
+    setSelectedStudentIds([]);
     loadAvailableStudents(subject._id);
     setShowEnrollModal(true);
+  }
+
+  function toggleStudentSelection(studentId: string) {
+    setSelectedStudentIds((current) =>
+      current.includes(studentId)
+        ? current.filter((id) => id !== studentId)
+        : [...current, studentId]
+    );
   }
 
   async function enrollStudents(studentIds: string[]) {
@@ -85,7 +96,12 @@ export default function StudentsScreen() {
     try {
       await apiService.enrollStudents(selectedSubject._id, studentIds);
       Alert.alert('Success', `${studentIds.length} student(s) enrolled successfully`);
-      loadSubjects();
+      await loadSubjects();
+      setStudentListVersion((version) => version + 1);
+      setSelectedStudentIds([]);
+      setAvailableStudents((current) =>
+        current.filter((student) => !studentIds.includes(student._id))
+      );
       setShowEnrollModal(false);
     } catch (err: any) {
       Alert.alert('Error', err.response?.data?.message || 'Failed to enroll students');
@@ -107,7 +123,8 @@ export default function StudentsScreen() {
             try {
               await apiService.unenrollStudents(subject._id, [studentId]);
               Alert.alert('Success', 'Student unenrolled');
-              loadSubjects();
+              await loadSubjects();
+              setStudentListVersion((version) => version + 1);
             } catch (err: any) {
               Alert.alert('Error', err.response?.data?.message || 'Failed to unenroll');
             }
@@ -180,6 +197,7 @@ export default function StudentsScreen() {
 
                 <StudentList
                   subjectId={subject._id}
+                  refreshKey={studentListVersion}
                   onUnenroll={(studentId: string, studentName: string) =>
                     unenrollStudent(subject, studentId, studentName)
                   }
@@ -222,8 +240,11 @@ export default function StudentsScreen() {
                   {availableStudents.map((student) => (
                     <Pressable
                       key={student._id}
-                      style={styles.studentItem}
-                      onPress={() => enrollStudents([student._id])}
+                      style={[
+                        styles.studentItem,
+                        selectedStudentIds.includes(student._id) && styles.studentItemSelected,
+                      ]}
+                      onPress={() => toggleStudentSelection(student._id)}
                       disabled={enrolling}
                     >
                       <View style={styles.studentAvatar}>
@@ -234,17 +255,42 @@ export default function StudentsScreen() {
                       <View style={styles.studentInfo}>
                         <Text style={styles.studentName}>{student.name}</Text>
                         <Text style={styles.studentMeta}>
-                          {student.rollNumber || student.registrationNumber || 'No ID'}
+                          {student.rollNumber || student.registrationNumber || 'No ID'} • {student.branch} Sem {student.semester}
                         </Text>
                       </View>
-                      <View style={styles.addIcon}>
-                        <MaterialIcons name="person-add-alt-1" size={16} color={colors.white} />
+                      <View
+                        style={[
+                          styles.selectIcon,
+                          selectedStudentIds.includes(student._id) && styles.selectIconActive,
+                        ]}
+                      >
+                        {selectedStudentIds.includes(student._id) && (
+                          <MaterialIcons name="check" size={16} color={colors.white} />
+                        )}
                       </View>
                     </Pressable>
                   ))}
                 </View>
               )}
             </ScrollView>
+
+            {availableStudents.length > 0 && (
+              <View style={styles.modalFooter}>
+                <Pressable
+                  style={[
+                    styles.enrollSelectedButton,
+                    (selectedStudentIds.length === 0 || enrolling) && styles.enrollSelectedButtonDisabled,
+                  ]}
+                  onPress={() => enrollStudents(selectedStudentIds)}
+                  disabled={selectedStudentIds.length === 0 || enrolling}
+                >
+                  <MaterialIcons name="person-add-alt-1" size={18} color={colors.white} />
+                  <Text style={styles.enrollSelectedButtonText}>
+                    {enrolling ? 'Enrolling...' : `Enroll ${selectedStudentIds.length} Selected`}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -252,18 +298,12 @@ export default function StudentsScreen() {
   );
 }
 
-function StudentList({ subjectId, onUnenroll }: any) {
+function StudentList({ subjectId, refreshKey, onUnenroll }: any) {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    if (expanded) {
-      loadStudents();
-    }
-  }, [expanded, subjectId]);
-
-  async function loadStudents() {
+  const loadStudents = useCallback(async () => {
     setLoading(true);
     try {
       const res = await apiService.getSubject(subjectId);
@@ -277,7 +317,11 @@ function StudentList({ subjectId, onUnenroll }: any) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [subjectId]);
+
+  useEffect(() => {
+    loadStudents();
+  }, [loadStudents, refreshKey]);
 
   return (
     <View style={styles.studentListContainer}>
@@ -575,16 +619,50 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     backgroundColor: theme.background,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  addIcon: {
+  studentItemSelected: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary + '12',
+  },
+  selectIcon: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: theme.primary,
+    borderWidth: 1,
+    borderColor: theme.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  selectIconActive: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
+  },
   addIconText: {
     color: colors.white,
+  },
+  modalFooter: {
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+    marginTop: spacing.md,
+  },
+  enrollSelectedButton: {
+    backgroundColor: theme.primary,
+    borderRadius: 12,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  enrollSelectedButtonDisabled: {
+    opacity: 0.5,
+  },
+  enrollSelectedButtonText: {
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: fontSize.md,
   },
 });

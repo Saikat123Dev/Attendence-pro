@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
   ActivityIndicator,
@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { spacing, fontSize, borderRadius } from '../../constants/theme';
+import { spacing, fontSize, borderRadius, shadows } from '../../constants/theme';
 
 interface ButtonProps {
   title: string;
@@ -71,11 +71,14 @@ export function Button({
 
   if (variant === 'primary') {
     return (
-      <TouchableOpacity
-        style={[styles.touchable, style]}
+      <Pressable
+        style={({ pressed }) => [
+          styles.touchable,
+          pressed && !isDisabled && styles.pressed,
+          style,
+        ]}
         onPress={onPress}
         disabled={isDisabled}
-        activeOpacity={0.9}
       >
         <LinearGradient
           colors={isDisabled ? ['#3A465F', '#364056'] : [variantColors.primary.bg, variantColors.primary.bg2]}
@@ -85,16 +88,19 @@ export function Button({
         >
           {content}
         </LinearGradient>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
   return (
-    <TouchableOpacity
-      style={[styles.touchable, style]}
+    <Pressable
+      style={({ pressed }) => [
+        styles.touchable,
+        pressed && !isDisabled && styles.pressed,
+        style,
+      ]}
       onPress={onPress}
       disabled={isDisabled}
-      activeOpacity={0.9}
     >
       <View
         style={[
@@ -106,13 +112,17 @@ export function Button({
       >
         {content}
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   touchable: {
     borderRadius: borderRadius.md,
+  },
+  pressed: {
+    transform: [{ scale: 0.97 }],
+    opacity: 0.9,
   },
   button: {
     borderRadius: borderRadius.md,
@@ -124,6 +134,9 @@ const styles = StyleSheet.create({
   primaryBorder: {
     borderWidth: 1,
     borderColor: '#5D7BFF',
+    ...shadows.md,
+    shadowColor: '#4F6EF7',
+    shadowOpacity: 0.28,
   },
   iconWrap: {
     marginRight: 2,

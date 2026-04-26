@@ -50,6 +50,7 @@ interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
   clearError: () => void;
   setUser: (user: User | null) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -148,6 +149,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_USER', payload: user });
   }
 
+  async function refreshUser() {
+    const response = await apiService.getMe();
+    dispatch({ type: 'SET_USER', payload: response.user });
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -157,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         clearError,
         setUser,
+        refreshUser,
       }}
     >
       {children}

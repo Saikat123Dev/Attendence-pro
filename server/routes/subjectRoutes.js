@@ -31,6 +31,30 @@ router.get('/available', subjectController.getAvailableSubjects);
 router.get('/student', authorize('STUDENT'), subjectController.getStudentSubjects);
 
 /**
+ * @route   POST /api/subjects/:id/self-enroll
+ * @desc    Enroll current student in a compatible subject
+ * @access  Student
+ */
+router.post(
+  '/:id/self-enroll',
+  authorize('STUDENT'),
+  validate(schemas.subjectIdParam, 'params'),
+  subjectController.selfEnrollSubject
+);
+
+/**
+ * @route   POST /api/subjects/:id/self-unenroll
+ * @desc    Remove current student from an enrolled subject
+ * @access  Student
+ */
+router.post(
+  '/:id/self-unenroll',
+  authorize('STUDENT'),
+  validate(schemas.subjectIdParam, 'params'),
+  subjectController.selfUnenrollSubject
+);
+
+/**
  * @route   GET /api/subjects/:id
  * @desc    Get subject by ID
  * @access  Teacher (own) or Student (enrolled)

@@ -3,7 +3,7 @@
  * Teacher: Manage subjects (CRUD)
  * Student: View enrolled subjects (read-only)
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -37,13 +37,15 @@ const theme = {
 };
 
 export default function SubjectsScreen() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [availableSubjects, setAvailableSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingSubject, setEditingSubject] = useState<any>(null);
+  const [actionSubjectId, setActionSubjectId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -54,22 +56,92 @@ export default function SubjectsScreen() {
 
   const isTeacher = user?.role === 'TEACHER';
 
-  useEffect(() => {
-    loadSubjects();
-  }, []);
-
-  async function loadSubjects() {
+  const loadSubjects = useCallback(async () => {
     try {
-      const res = isTeacher
-        ? await apiService.getMySubjects()
-        : await apiService.getStudentSubjects();
-      setSubjects(res.subjects || []);
+      if (isTeacher) {
+        const res = await apiService.getMySubjects();
+        setSubjects(res.subjects || []);
+        setAvailableSubjects([]);
+      } else {
+        const [enrolledRes, availableRes] = await Promise.all([
+          apiService.getStudentSubjects(),
+          apiService.getAvailableSubjects(),
+        ]);
+        setSubjects(enrolledRes.subjects || []);
+        setAvailableSubjects(availableRes.subjects || []);
+      }
     } catch (err: any) {
       console.error('Error loading subjects:', err);
       Alert.alert('Error', err.response?.data?.message || 'Failed to load subjects');
     } finally {
       setLoading(false);
     }
+  }, [isTeacher]);
+
+  useEffect(() => {
+    loadSubjects();
+  }, [loadSubjects]);
+
+  async function handleSelfEnroll(subject: any) {
+    setActionSubjectId(subject._id);
+    try {
+      const res = await apiService.selfEnrollSubject(subject._id);
+      const enrolledSubject = res.subject || subject;
+      setAvailableSubjects((current) =>
+        current.filter((availableSubject) => availableSubject._id !== subject._id)
+      );
+      setSubjects((current) => {
+        if (current.some((currentSubject) => currentSubject._id === subject._id)) {
+          return current;
+        }
+        return [...current, enrolledSubject].sort((a, b) =>
+          String(a.name).localeCompare(String(b.name))
+        );
+      });
+      await Promise.all([loadSubjects(), refreshUser()]);
+      Alert.alert('Success', `Enrolled in ${subject.name}`);
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to enroll in subject');
+    } finally {
+      setActionSubjectId(null);
+    }
+  }
+
+  async function handleSelfUnenroll(subject: any) {
+    Alert.alert(
+      'Leave Subject',
+      `Remove ${subject.name} from your enrolled subjects?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: async () => {
+            setActionSubjectId(subject._id);
+            try {
+              await apiService.selfUnenrollSubject(subject._id);
+              setSubjects((current) =>
+                current.filter((enrolledSubject) => enrolledSubject._id !== subject._id)
+              );
+              setAvailableSubjects((current) => {
+                if (current.some((availableSubject) => availableSubject._id === subject._id)) {
+                  return current;
+                }
+                return [...current, subject].sort((a, b) =>
+                  String(a.name).localeCompare(String(b.name))
+                );
+              });
+              await Promise.all([loadSubjects(), refreshUser()]);
+              Alert.alert('Success', 'Subject removed');
+            } catch (err: any) {
+              Alert.alert('Error', err.response?.data?.message || 'Failed to remove subject');
+            } finally {
+              setActionSubjectId(null);
+            }
+          },
+        },
+      ]
+    );
   }
 
   async function onRefresh() {
@@ -207,6 +279,22 @@ export default function SubjectsScreen() {
           />
         }
       >
+        {!isTeacher && (
+          <View style={styles.studentSummary}>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryNumber}>{subjects.length}</Text>
+              <Text style={styles.summaryLabel}>Enrolled</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryItem}>
+              <Text style={[styles.summaryNumber, { color: theme.success }]}>
+                {availableSubjects.length}
+              </Text>
+              <Text style={styles.summaryLabel}>Available</Text>
+            </View>
+          </View>
+        )}
+
         {subjects.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyCard}>
@@ -219,7 +307,7 @@ export default function SubjectsScreen() {
               <Text style={styles.emptyText}>
                 {isTeacher
                   ? 'Create your first subject to start taking attendance'
-                  : 'You are not enrolled in any subjects yet'}
+                  : 'Browse compatible subjects below and enroll yourself'}
               </Text>
               {isTeacher && (
                 <Pressable
@@ -264,6 +352,15 @@ export default function SubjectsScreen() {
                         <MaterialIcons name="delete-outline" size={20} color={theme.danger} />
                       </Pressable>
                     )}
+                    {!isTeacher && (
+                      <Pressable
+                        style={styles.leaveButton}
+                        onPress={() => handleSelfUnenroll(subject)}
+                        disabled={actionSubjectId === subject._id}
+                      >
+                        <MaterialIcons name="logout" size={18} color={theme.danger} />
+                      </Pressable>
+                    )}
                   </View>
                   <View style={styles.subjectMeta}>
                     <Badge
@@ -285,10 +382,73 @@ export default function SubjectsScreen() {
                         size="sm"
                       />
                     )}
+                    {!isTeacher && subject.teacherId && (
+                      <Badge
+                        text={(subject.teacherId as any)?.name || 'Teacher'}
+                        variant="default"
+                        size="sm"
+                      />
+                    )}
                   </View>
                 </View>
               </Pressable>
             ))}
+          </View>
+        )}
+
+        {!isTeacher && (
+          <View style={styles.availableSection}>
+            <Text style={styles.sectionTitle}>Available Subjects</Text>
+            {availableSubjects.length === 0 ? (
+              <View style={styles.availableEmpty}>
+                <Text style={styles.availableEmptyText}>
+                  No compatible subjects are available right now
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.subjectList}>
+                {availableSubjects.map((subject) => (
+                  <View key={subject._id} style={styles.subjectCard}>
+                    <View style={styles.subjectCardInner}>
+                      <View style={styles.subjectHeader}>
+                        <View style={[styles.subjectIconBg, { backgroundColor: theme.success + '20' }]}>
+                          <MaterialIcons name="library-add" size={20} color={theme.success} />
+                        </View>
+                        <View style={styles.subjectInfo}>
+                          <Text style={styles.subjectName}>{subject.name}</Text>
+                          <Text style={[styles.subjectCode, { color: theme.success }]}>
+                            {subject.code}
+                          </Text>
+                        </View>
+                        <Pressable
+                          style={[
+                            styles.enrollButton,
+                            actionSubjectId === subject._id && styles.disabledButton,
+                          ]}
+                          onPress={() => handleSelfEnroll(subject)}
+                          disabled={actionSubjectId === subject._id}
+                        >
+                          <Text style={styles.enrollButtonText}>
+                            {actionSubjectId === subject._id ? 'Joining...' : 'Enroll'}
+                          </Text>
+                        </Pressable>
+                      </View>
+                      <View style={styles.subjectMeta}>
+                        <Badge text={`Semester ${subject.semester}`} variant="success" size="sm" />
+                        {subject.branch && <Badge text={subject.branch} variant="default" size="sm" />}
+                        {subject.teacherId && (
+                          <Badge
+                            text={(subject.teacherId as any)?.name || 'Teacher'}
+                            variant="default"
+                            size="sm"
+                          />
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -491,6 +651,57 @@ const styles = StyleSheet.create({
   subjectList: {
     gap: spacing.sm,
   },
+  studentSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryNumber: {
+    fontSize: fontSize.xxl,
+    fontWeight: '800',
+    color: theme.textPrimary,
+  },
+  summaryLabel: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  summaryDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: theme.borderLight,
+  },
+  availableSection: {
+    marginTop: spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: theme.textPrimary,
+    marginBottom: spacing.md,
+  },
+  availableEmpty: {
+    backgroundColor: theme.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: spacing.lg,
+  },
+  availableEmptyText: {
+    color: theme.textSecondary,
+    textAlign: 'center',
+    fontSize: fontSize.sm,
+  },
   subjectCard: {
     marginBottom: spacing.sm,
     borderRadius: 14,
@@ -535,9 +746,29 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: spacing.sm,
   },
+  leaveButton: {
+    padding: spacing.sm,
+  },
   deleteButtonText: {},
+  enrollButton: {
+    backgroundColor: theme.success + '20',
+    borderWidth: 1,
+    borderColor: theme.success + '40',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 10,
+  },
+  enrollButtonText: {
+    color: theme.success,
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
   subjectMeta: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.md,
     paddingTop: spacing.sm,

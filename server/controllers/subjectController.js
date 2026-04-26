@@ -7,6 +7,13 @@ const {
   isOwnedBy,
 } = require('../utils/profileResolver');
 
+function isSubjectCompatibleWithStudent(subject, student) {
+  return (
+    subject.branch === student.branch &&
+    Number(subject.semester) === Number(student.semester)
+  );
+}
+
 /**
  * Get all subjects for current teacher
  * GET /api/subjects
@@ -215,9 +222,34 @@ async function enrollStudents(req, res, next) {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
+    const students = await Student.find({ _id: { $in: studentIds } });
+    if (students.length !== studentIds.length) {
+      return res.status(400).json({
+        error: 'INVALID_STUDENTS',
+        message: 'One or more selected students could not be found',
+      });
+    }
+
+    const incompatibleStudents = students.filter(
+      (student) => !isSubjectCompatibleWithStudent(subject, student)
+    );
+    if (incompatibleStudents.length > 0) {
+      return res.status(400).json({
+        error: 'INCOMPATIBLE_STUDENTS',
+        message: 'Students must match the subject branch and semester',
+        students: incompatibleStudents.map((student) => ({
+          _id: student._id,
+          name: student.name,
+          rollNumber: student.rollNumber,
+          branch: student.branch,
+          semester: student.semester,
+        })),
+      });
+    }
+
     // Add subject to each student's subjects array
-    await Student.updateMany(
-      { _id: { $in: studentIds } },
+    const result = await Student.updateMany(
+      { _id: { $in: studentIds }, subjects: { $ne: id } },
       { $addToSet: { subjects: id } }
     );
 
@@ -225,7 +257,8 @@ async function enrollStudents(req, res, next) {
     const enrolledStudents = await Student.countDocuments({ subjects: id });
 
     res.json({
-      message: `Enrolled ${studentIds.length} students`,
+      message: `Enrolled ${result.modifiedCount} students`,
+      enrolledCount: result.modifiedCount,
       enrolledStudents,
     });
   } catch (err) {
@@ -292,9 +325,11 @@ async function getAvailableStudents(req, res, next) {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
-    // Build query for available students
+    // Build query for compatible students not already enrolled in the subject.
     const query = {
       _id: { $nin: await Student.find({ subjects: id }).distinct('_id') },
+      branch: subject.branch,
+      semester: subject.semester,
     };
 
     if (branch) query.branch = branch.toUpperCase();
@@ -338,12 +373,99 @@ async function getStudentSubjects(req, res, next) {
  */
 async function getAvailableSubjects(req, res, next) {
   try {
-    const subjects = await Subject.find({})
+    const { branch, semester, includeEnrolled } = req.query;
+    const query = {};
+
+    if (req.user.role === 'STUDENT') {
+      const { student } = await getStudentIdentityByUserId(req.user.sub);
+      query.branch = student.branch;
+      query.semester = student.semester;
+      if (includeEnrolled !== 'true') {
+        query._id = { $nin: student.subjects };
+      }
+    } else {
+      if (branch) query.branch = branch.toUpperCase();
+      if (semester) query.semester = parseInt(semester, 10);
+    }
+
+    const subjects = await Subject.find(query)
       .populate('teacherId', 'name department')
-      .sort({ name: 1 })
+      .sort({ name: 1, code: 1 })
       .limit(200);
 
     res.json({ subjects });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Enroll current student in a compatible subject
+ * POST /api/subjects/:id/self-enroll
+ * Student only
+ */
+async function selfEnrollSubject(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { student } = await getStudentIdentityByUserId(req.user.sub);
+
+    const subject = await Subject.findById(id);
+    if (!subject) {
+      return res.status(404).json({ error: 'SUBJECT_NOT_FOUND' });
+    }
+
+    if (!isSubjectCompatibleWithStudent(subject, student)) {
+      return res.status(400).json({
+        error: 'INCOMPATIBLE_SUBJECT',
+        message: 'This subject is not available for your branch and semester',
+      });
+    }
+
+    const alreadyEnrolled = student.subjects.some(
+      (subjectId) => subjectId.toString() === id
+    );
+    if (alreadyEnrolled) {
+      await subject.populate('teacherId', 'name department');
+      return res.json({
+        message: 'Already enrolled in subject',
+        subject,
+      });
+    }
+
+    await Student.findByIdAndUpdate(student._id, {
+      $addToSet: { subjects: id },
+    });
+    await subject.populate('teacherId', 'name department');
+
+    res.status(201).json({
+      message: 'Subject enrolled',
+      subject,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Remove current student from an enrolled subject
+ * POST /api/subjects/:id/self-unenroll
+ * Student only
+ */
+async function selfUnenrollSubject(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { student } = await getStudentIdentityByUserId(req.user.sub);
+
+    const subject = await Subject.findById(id);
+    if (!subject) {
+      return res.status(404).json({ error: 'SUBJECT_NOT_FOUND' });
+    }
+
+    await Student.findByIdAndUpdate(student._id, {
+      $pull: { subjects: id },
+    });
+
+    res.json({ message: 'Subject removed' });
   } catch (err) {
     next(err);
   }
@@ -360,4 +482,6 @@ module.exports = {
   getAvailableStudents,
   getStudentSubjects,
   getAvailableSubjects,
+  selfEnrollSubject,
+  selfUnenrollSubject,
 };

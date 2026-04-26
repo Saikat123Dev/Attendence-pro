@@ -28,15 +28,15 @@ export function Card({ children, style, padding = 'md' }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#121A2F',
+    backgroundColor: '#141828',
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: '#202A43',
+    borderColor: '#252B42',
     ...shadows.sm,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 4,
   },
 });

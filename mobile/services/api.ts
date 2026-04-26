@@ -239,6 +239,21 @@ class ApiService {
     return response.data;
   }
 
+  async getAvailableSubjects(params?: { branch?: string; semester?: number; includeEnrolled?: boolean }) {
+    const response = await this.api.get('/subjects/available', { params });
+    return response.data;
+  }
+
+  async selfEnrollSubject(subjectId: string) {
+    const response = await this.api.post(`/subjects/${subjectId}/self-enroll`);
+    return response.data;
+  }
+
+  async selfUnenrollSubject(subjectId: string) {
+    const response = await this.api.post(`/subjects/${subjectId}/self-unenroll`);
+    return response.data;
+  }
+
   async getSubject(id: string) {
     const response = await this.api.get(`/subjects/${id}`);
     return response.data;

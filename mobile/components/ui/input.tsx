@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   TextInputProps,
 } from 'react-native';
-import { spacing, fontSize, borderRadius } from '../../constants/theme';
+import { spacing, fontSize, borderRadius, colors } from '../../constants/theme';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -46,7 +46,11 @@ export function Input({
       <View
         style={[
           styles.inputContainer,
-          { borderColor: getBorderColor(), borderWidth: isFocused ? 2 : 1 },
+          {
+            borderColor: getBorderColor(),
+            borderWidth: isFocused ? 2 : 1,
+            shadowOpacity: isFocused ? 0.28 : 0,
+          },
           error && styles.errorBorder,
         ]}
       >
@@ -55,6 +59,7 @@ export function Input({
         <TextInput
           style={[styles.input, leftIcon ? styles.inputWithLeftIcon : null, style]}
           placeholderTextColor="#6B7194"
+          selectionColor={colors.primary}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           {...props}
@@ -90,9 +95,13 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#10162A',
+    backgroundColor: '#0D1428',
     borderRadius: borderRadius.md,
-    minHeight: 50,
+    minHeight: 52,
+    shadowColor: '#4F6EF7',
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 12,
+    elevation: 2,
   },
   errorBorder: {
     borderWidth: 2,
@@ -103,7 +112,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: '#F0F2FF',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
   },
   inputWithLeftIcon: {
     paddingLeft: spacing.xs,

@@ -2,7 +2,7 @@
  * Home Screen - AttendX Dark Pro Theme
  * Role-Based Dashboard with Teacher (Blue) and Student (Green) themes
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -64,11 +64,7 @@ export default function HomeScreen() {
     ? ['#4F6EF7', '#2D7DD2']
     : ['#10B981', '#059669'];
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       if (isTeacher) {
         const [sessionsRes, overviewRes] = await Promise.all([
@@ -83,7 +79,11 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [isTeacher]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -405,6 +405,7 @@ export default function HomeScreen() {
               styles.actionCard,
               pressed && styles.actionCardPressed,
             ]}
+            onPress={() => router.push('/(tabs)/subjects')}
           >
             <LinearGradient
               colors={[theme.warning + '20', theme.warning + '10']}
@@ -419,6 +420,7 @@ export default function HomeScreen() {
               styles.actionCard,
               pressed && styles.actionCardPressed,
             ]}
+            onPress={() => router.push('/(tabs)/attendance')}
           >
             <LinearGradient
               colors={['#9333EA20', '#9333EA10']}

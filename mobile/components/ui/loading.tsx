@@ -32,11 +32,16 @@ const styles = StyleSheet.create({
     padding: spacing.xxl,
   },
   indicatorContainer: {
-    backgroundColor: '#121A2F',
+    backgroundColor: '#141828',
     borderRadius: 999,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: '#202A43',
+    borderColor: '#252B42',
+    shadowColor: '#4F6EF7',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
   },
   message: {
     fontSize: fontSize.md,

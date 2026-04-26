@@ -56,6 +56,9 @@ export default function TabLayout() {
           backgroundColor: theme.surface,
           borderTopColor: theme.border,
           borderTopWidth: 1,
+          marginHorizontal: 12,
+          marginBottom: Platform.OS === 'ios' ? 8 : 10,
+          borderRadius: 22,
           height: Platform.OS === 'ios' ? 88 : 72,
           paddingTop: 8,
           paddingBottom: Platform.OS === 'ios' ? 28 : 12,
@@ -92,7 +95,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.tabIconContainer}>
               <IconSymbol size={24} name="house.fill" color={color} />
-              {focused && <View style={styles.activeDot} />}
+              {focused && <View style={[styles.activeDot, { backgroundColor: accentColor }]} />}
             </View>
           ),
           headerTitle: isTeacher ? 'Teacher Dashboard' : 'Student Dashboard',
@@ -106,7 +109,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.tabIconContainer}>
               <IconSymbol size={24} name="qrcode.viewfinder" color={color} />
-              {focused && <View style={styles.activeDot} />}
+              {focused && <View style={[styles.activeDot, { backgroundColor: accentColor }]} />}
             </View>
           ),
           headerTitle: isTeacher ? 'Display QR Code' : 'Scan QR Code',
@@ -119,7 +122,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.tabIconContainer}>
               <IconSymbol size={24} name="books.vertical.fill" color={color} />
-              {focused && <View style={styles.activeDot} />}
+              {focused && <View style={[styles.activeDot, { backgroundColor: accentColor }]} />}
             </View>
           ),
           headerTitle: isTeacher ? 'My Subjects' : 'Enrolled Subjects',
@@ -132,7 +135,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.tabIconContainer}>
               <IconSymbol size={24} name="list.clipboard" color={color} />
-              {focused && <View style={styles.activeDot} />}
+              {focused && <View style={[styles.activeDot, { backgroundColor: accentColor }]} />}
             </View>
           ),
           headerTitle: isTeacher ? 'Attendance Sessions' : 'My Attendance',
@@ -152,7 +155,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View style={styles.tabIconContainer}>
               <IconSymbol size={24} name="person.fill" color={color} />
-              {focused && <View style={styles.activeDot} />}
+              {focused && <View style={[styles.activeDot, { backgroundColor: accentColor }]} />}
             </View>
           ),
           headerTitle: 'My Profile',

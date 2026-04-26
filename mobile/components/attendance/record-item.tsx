@@ -2,10 +2,10 @@
  * Attendance Record Item Component - AttendX Dark Pro Theme
  */
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Badge } from '../ui/badge';
 import { Avatar } from '../ui/avatar';
-import { colors, spacing, fontSize, borderRadius, shadows } from '../../constants/theme';
+import { spacing, fontSize, borderRadius, shadows } from '../../constants/theme';
 
 interface AttendanceRecordItemProps {
   name: string;
@@ -57,9 +57,12 @@ export function AttendanceRecordItem({
 
   if (onPress) {
     return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => pressed && styles.pressed}
+      >
         {Content}
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
@@ -82,6 +85,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
+  },
+  pressed: {
+    transform: [{ scale: 0.985 }],
+    opacity: 0.88,
   },
   info: {
     flex: 1,
