@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, ReactNode } from 'react';
 import { User } from '../types';
 import { apiService } from '../services/api';
 import { router } from 'expo-router';
@@ -77,6 +77,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const isRegisteringRef = useRef(false);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -132,6 +133,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function register(data: any) {
+    if (isRegisteringRef.current) {
+      return;
+    }
+
+    isRegisteringRef.current = true;
+
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
@@ -146,9 +153,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // After registration, always go to complete-profile to set role
       router.replace('/(auth)/complete-profile');
     } catch (error: any) {
+      const isDuplicateEmail = error.response?.data?.error === 'DUPLICATE_ENTRY';
+
+      // If the first registration succeeded and a late duplicate request failed,
+      // recover by reloading the authenticated user and continuing to profile completion.
+      if (isDuplicateEmail && (await apiService.hasValidToken())) {
+        const response = await apiService.getMe();
+        dispatch({ type: 'SET_USER', payload: normalizeUserRole(response.user) });
+        router.replace('/(auth)/complete-profile');
+        return;
+      }
+
       const message = error.response?.data?.message || 'Registration failed. Please try again.';
       dispatch({ type: 'SET_ERROR', payload: message });
       throw error;
+    } finally {
+      isRegisteringRef.current = false;
     }
   }
 

@@ -89,13 +89,41 @@ async function revokeRefreshToken(token) {
  */
 async function register(userData) {
   const { email, password, name } = userData;
+  const normalizedEmail = email.toLowerCase();
+
+  const existingUser = await User.findOne({ email: normalizedEmail });
+  if (existingUser && !existingUser.role) {
+    const passwordMatches = await existingUser.comparePassword(password);
+    if (passwordMatches) {
+      const tokens = await generateTokens(existingUser);
+      const fullUser = await getFullUser(existingUser._id);
+      return { user: fullUser, ...tokens };
+    }
+  }
 
   // Create user with only basic info - profile completed in next step
-  const user = await User.create({
-    email,
-    password,
-    name,
-  });
+  let user;
+  try {
+    user = await User.create({
+      email: normalizedEmail,
+      password,
+      name,
+    });
+  } catch (err) {
+    if (err.code === 11000 && err.keyValue?.email) {
+      const conflictingUser = await User.findOne({ email: normalizedEmail });
+      if (conflictingUser && !conflictingUser.role) {
+        const passwordMatches = await conflictingUser.comparePassword(password);
+        if (passwordMatches) {
+          const tokens = await generateTokens(conflictingUser);
+          const fullUser = await getFullUser(conflictingUser._id);
+          return { user: fullUser, ...tokens };
+        }
+      }
+    }
+
+    throw err;
+  }
 
   // Generate tokens
   const tokens = await generateTokens(user);

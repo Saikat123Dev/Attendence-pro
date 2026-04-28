@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useRef } from 'react';
 import {
   View,
   Text,
@@ -27,6 +28,7 @@ const theme = {
 export default function RegisterScreen() {
   const { register, isLoading: authLoading, error, clearError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const submitLockRef = useRef(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -63,7 +65,8 @@ export default function RegisterScreen() {
   }
 
   async function handleRegister() {
-    if (!isFormValid || isLoading) return;
+    if (!isFormValid || isLoading || submitLockRef.current) return;
+    submitLockRef.current = true;
     setIsLoading(true);
     try {
       await register({
@@ -73,6 +76,7 @@ export default function RegisterScreen() {
       });
     } finally {
       setIsLoading(false);
+      submitLockRef.current = false;
     }
   }
 
