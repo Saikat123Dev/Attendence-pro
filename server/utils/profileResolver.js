@@ -1,3 +1,4 @@
+const User = require('../models/User');
 const Teacher = require('../models/Teacher');
 const Student = require('../models/Student');
 
@@ -43,6 +44,26 @@ async function getStudentIdentityByUserId(userId) {
   };
 }
 
+async function resolveUserRoleByUserId(userId) {
+  const user = await User.findById(userId).select('role');
+
+  if (user?.role) {
+    return user.role.toUpperCase();
+  }
+
+  const teacher = await Teacher.exists({ userId });
+  if (teacher) {
+    return 'TEACHER';
+  }
+
+  const student = await Student.exists({ userId });
+  if (student) {
+    return 'STUDENT';
+  }
+
+  return null;
+}
+
 function isOwnedBy(subjectOrSession, ownerIds) {
   const ownerId = normalizeId(subjectOrSession?.teacherId);
   return ownerIds.includes(ownerId);
@@ -51,6 +72,7 @@ function isOwnedBy(subjectOrSession, ownerIds) {
 module.exports = {
   getTeacherIdentityByUserId,
   getStudentIdentityByUserId,
+  resolveUserRoleByUserId,
   isOwnedBy,
   normalizeId,
 };

@@ -35,10 +35,15 @@ async function startSession(teacherId, subjectId, ownerIds = [teacherId.toString
     throw Object.assign(new Error('SESSION_ALREADY_ACTIVE'), { status: 409 });
   }
 
+  const enrolledStudentIds = await Student.find({ subjects: subjectId })
+    .select('_id')
+    .lean();
+
   // Create new session
   const session = await AttendanceSession.create({
     teacherId,
     subjectId,
+    enrolledStudentIds: enrolledStudentIds.map((student) => student._id),
     status: 'ACTIVE',
     startedAt: new Date(),
   });
@@ -191,12 +196,22 @@ async function markAttendance(sessionId, qrData, studentId, deviceInfo) {
     throw Object.assign(new Error('STUDENT_NOT_FOUND'), { status: 404 });
   }
 
-  // Check if student is enrolled in this subject
-  const isEnrolled = student.subjects.some(
-    (subjectId) => subjectId.toString() === session.subjectId.toString()
-  );
-  if (!isEnrolled) {
-    throw Object.assign(new Error('STUDENT_NOT_IN_SUBJECT'), { status: 403 });
+  const sessionRoster = Array.isArray(session.enrolledStudentIds)
+    ? session.enrolledStudentIds.map((id) => id.toString())
+    : null;
+
+  // Check if student was part of the roster when the session started
+  if (sessionRoster) {
+    if (!sessionRoster.includes(studentId.toString())) {
+      throw Object.assign(new Error('STUDENT_NOT_IN_SESSION_ROSTER'), { status: 403 });
+    }
+  } else {
+    const isEnrolled = student.subjects.some(
+      (subjectId) => subjectId.toString() === session.subjectId.toString()
+    );
+    if (!isEnrolled) {
+      throw Object.assign(new Error('STUDENT_NOT_IN_SUBJECT'), { status: 403 });
+    }
   }
 
   // Check for duplicate attendance (unique index will also catch this)
@@ -278,8 +293,14 @@ async function updateStats(studentId, subjectId) {
  * @param {Object} session - Attendance session document
  */
 async function markAbsentStudents(session) {
-  // Get all students enrolled in this subject
-  const students = await Student.find({ subjects: session.subjectId });
+  const rosterStudentIds = Array.isArray(session.enrolledStudentIds)
+    ? session.enrolledStudentIds.map((id) => id.toString())
+    : (await Student.find({ subjects: session.subjectId }).select('_id').lean()).map((student) => student._id.toString());
+
+  // Get all students in the frozen session roster
+  const students = rosterStudentIds.length
+    ? await Student.find({ _id: { $in: rosterStudentIds } }).select('_id')
+    : [];
 
   // Get already marked students
   const markedRecords = await AttendanceRecord.find({ sessionId: session._id });
@@ -463,8 +484,16 @@ async function getSessionDetails(sessionId, ownerIds) {
   }
 
   const records = await AttendanceRecord.find({ sessionId })
-    .populate('studentId', 'name rollNumber branch semester')
-    .sort({ 'studentId.rollNumber': 1 });
+    .populate('studentId', 'name rollNumber branch semester');
+
+  records.sort((left, right) => {
+    const leftRoll = left.studentId?.rollNumber || '';
+    const rightRoll = right.studentId?.rollNumber || '';
+    return String(leftRoll).localeCompare(String(rightRoll), undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    });
+  });
 
   const present = records.filter((r) => r.status === 'PRESENT');
   const absent = records.filter((r) => r.status === 'ABSENT');

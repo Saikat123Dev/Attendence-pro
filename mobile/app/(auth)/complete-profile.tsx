@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -43,7 +43,7 @@ const PRIMARY_GRADIENT = ['#4F6EF7', '#7B93FC'] as const;
 export default function CompleteProfileScreen() {
   const { user, setUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [role, setRole] = useState<'TEACHER' | 'STUDENT' | null>(null);
+  const [role, setRole] = useState<'TEACHER' | 'STUDENT' | null>(user?.role ?? null);
   const [isPressed, setIsPressed] = useState(false);
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -57,6 +57,12 @@ export default function CompleteProfileScreen() {
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  useEffect(() => {
+    if (user?.role && !role) {
+      setRole(user.role);
+    }
+  }, [role, user?.role]);
 
   async function handleComplete() {
     if (!role) return;

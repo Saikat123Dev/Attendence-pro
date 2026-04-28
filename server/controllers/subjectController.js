@@ -1,6 +1,7 @@
 const Subject = require('../models/Subject');
 const Student = require('../models/Student');
 const Teacher = require('../models/Teacher');
+const AttendanceSession = require('../models/AttendanceSession');
 const {
   getTeacherIdentityByUserId,
   getStudentIdentityByUserId,
@@ -184,6 +185,14 @@ async function deleteSubject(req, res, next) {
 
     if (!isOwnedBy(subject, ownerIds)) {
       return res.status(403).json({ error: 'FORBIDDEN' });
+    }
+
+    const activeSession = await AttendanceSession.findOne({ subjectId: id, status: 'ACTIVE' }).select('_id');
+    if (activeSession) {
+      return res.status(409).json({
+        error: 'ACTIVE_SESSION_EXISTS',
+        message: 'Stop the active attendance session before deleting this subject',
+      });
     }
 
     // Remove subject from all students

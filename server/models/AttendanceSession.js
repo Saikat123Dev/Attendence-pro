@@ -12,6 +12,12 @@ const attendanceSessionSchema = new mongoose.Schema(
       ref: 'Subject',
       required: true,
     },
+    enrolledStudentIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Student',
+      },
+    ],
     status: {
       type: String,
       enum: ['ACTIVE', 'STOPPED'],

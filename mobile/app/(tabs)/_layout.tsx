@@ -41,6 +41,10 @@ export default function TabLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
+  if (user && (!user.role || !user.profile)) {
+    return <Redirect href="/(auth)/complete-profile" />;
+  }
+
   const isTeacher = user?.role === 'TEACHER';
   const accentColor = isTeacher ? theme.primary : theme.success;
 

@@ -18,14 +18,16 @@ type CompleteProfileData = {
   semester?: number;
 };
 
+type RefreshSubscriber = {
+  resolve: (value: any) => void;
+  reject: (error: unknown) => void;
+  originalRequest: any;
+};
+
 class ApiService {
   private api: ReturnType<typeof axios.create>;
   private isRefreshing = false;
-  private refreshSubscribers: Array<{
-    resolve: (value: any) => void;
-    reject: (error: unknown) => void;
-    originalRequest: any;
-  }> = [];
+  private refreshSubscribers: RefreshSubscriber[] = [];
 
   constructor() {
     this.api = axios.create({
@@ -161,7 +163,7 @@ class ApiService {
 
   async completeProfile(data: CompleteProfileData) {
     const response = await this.api.post('/auth/complete-profile', data);
-    const { user, accessToken, refreshToken } = response.data as { user?: any; accessToken?: string; refreshToken?: string };
+    const { accessToken, refreshToken } = response.data as { accessToken?: string; refreshToken?: string };
     if (accessToken && refreshToken) {
       await AsyncStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
       await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);

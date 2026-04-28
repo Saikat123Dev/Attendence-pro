@@ -5,6 +5,7 @@ const User = require('../models/User');
 const RefreshToken = require('../models/RefreshToken');
 const Student = require('../models/Student');
 const Teacher = require('../models/Teacher');
+const { resolveUserRoleByUserId } = require('../utils/profileResolver');
 
 /**
  * Generate access and refresh tokens for a user
@@ -113,6 +114,10 @@ async function register(userData) {
  */
 async function completeProfile(userId, profileData) {
   const normalizedRole = profileData.role?.toUpperCase();
+  if (!['TEACHER', 'STUDENT'].includes(normalizedRole)) {
+    throw Object.assign(new Error('Invalid role'), { status: 400, error: 'INVALID_ROLE' });
+  }
+
   const { role, ...roleSpecificData } = {
     ...profileData,
     role: normalizedRole,
@@ -123,36 +128,51 @@ async function completeProfile(userId, profileData) {
     throw Object.assign(new Error('User not found'), { status: 404, error: 'USER_NOT_FOUND' });
   }
 
-  if (user.role) {
-    throw Object.assign(new Error('Profile already completed'), { status: 400, error: 'PROFILE_ALREADY_COMPLETE' });
+  if (user.role && user.role.toUpperCase() !== normalizedRole) {
+    throw Object.assign(new Error('Profile role mismatch'), {
+      status: 400,
+      error: 'PROFILE_ROLE_MISMATCH',
+    });
   }
 
   // Set role on user
-  user.role = role;
+  user.role = normalizedRole;
   await user.save();
 
   // Generate new tokens with the correct role
   const tokens = await generateTokens(user);
 
   // Create role-specific profile
-  if (role === 'STUDENT') {
-    await Student.create({
-      userId: user._id,
-      name: user.name,
-      rollNumber: roleSpecificData.rollNumber,
-      registrationNumber: roleSpecificData.registrationNumber,
-      branch: roleSpecificData.branch,
-      semester: roleSpecificData.semester,
-      subjects: [],
-    });
-  } else if (role === 'TEACHER') {
-    await Teacher.create({
-      userId: user._id,
-      name: user.name,
-      employeeId: roleSpecificData.employeeId,
-      department: roleSpecificData.department,
-      subjects: [],
-    });
+  if (normalizedRole === 'STUDENT') {
+    await Student.findOneAndUpdate(
+      { userId: user._id },
+      {
+        $set: {
+          userId: user._id,
+          name: user.name,
+          rollNumber: roleSpecificData.rollNumber,
+          registrationNumber: roleSpecificData.registrationNumber,
+          branch: roleSpecificData.branch,
+          semester: roleSpecificData.semester,
+        },
+        $setOnInsert: { subjects: [] },
+      },
+      { upsert: true, new: true, runValidators: true }
+    );
+  } else if (normalizedRole === 'TEACHER') {
+    await Teacher.findOneAndUpdate(
+      { userId: user._id },
+      {
+        $set: {
+          userId: user._id,
+          name: user.name,
+          employeeId: roleSpecificData.employeeId,
+          department: roleSpecificData.department,
+        },
+        $setOnInsert: { subjects: [] },
+      },
+      { upsert: true, new: true, runValidators: true }
+    );
   }
 
   const fullUser = await getFullUser(user._id);
@@ -231,11 +251,14 @@ async function getFullUser(userId) {
 
   if (!user) return null;
 
+  const resolvedRole = user.role ? user.role.toUpperCase() : await resolveUserRoleByUserId(user._id);
+  const role = resolvedRole || user.role || null;
+
   let profile = null;
 
-  if (user.role === 'STUDENT') {
+  if (role === 'STUDENT') {
     profile = await Student.findOne({ userId: user._id }).populate('subjects');
-  } else if (user.role === 'TEACHER') {
+  } else if (role === 'TEACHER') {
     profile = await Teacher.findOne({ userId: user._id }).populate('subjects');
   }
 
@@ -243,7 +266,7 @@ async function getFullUser(userId) {
     _id: user._id,
     email: user.email,
     name: user.name,
-    role: user.role,
+    role,
     isActive: user.isActive,
     createdAt: user.createdAt,
     ...(profile && { profile }),

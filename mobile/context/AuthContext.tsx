@@ -3,6 +3,26 @@ import { User } from '../types';
 import { apiService } from '../services/api';
 import { router } from 'expo-router';
 
+function normalizeUserRole(user: User | null): User | null {
+  if (!user || user.role) {
+    return user;
+  }
+
+  if (!user.profile) {
+    return user;
+  }
+
+  if ('employeeId' in user.profile) {
+    return { ...user, role: 'TEACHER' };
+  }
+
+  if ('registrationNumber' in user.profile) {
+    return { ...user, role: 'STUDENT' };
+  }
+
+  return user;
+}
+
 interface AuthState {
   user: User | null;
   isLoading: boolean;
@@ -70,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (hasToken) {
         const response = await apiService.getMe();
-        dispatch({ type: 'SET_USER', payload: response.user });
+        dispatch({ type: 'SET_USER', payload: normalizeUserRole(response.user) });
       } else {
         dispatch({ type: 'SET_USER', payload: null });
       }
@@ -82,9 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function navigateAfterAuth(user: User | null) {
-    // If authenticated but no role, go to complete-profile
+    // If authenticated but no role or profile, go to complete-profile
     // Otherwise go to tabs
-    if (user && !user.role) {
+    if (user && (!user.role || !user.profile)) {
       router.replace('/(auth)/complete-profile');
     } else {
       router.replace('/(tabs)');
@@ -101,9 +121,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
       });
-      dispatch({ type: 'SET_USER', payload: response.user });
+      dispatch({ type: 'SET_USER', payload: normalizeUserRole(response.user) });
 
-      navigateAfterAuth(response.user);
+      navigateAfterAuth(normalizeUserRole(response.user));
     } catch (error: any) {
       const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
       dispatch({ type: 'SET_ERROR', payload: message });
@@ -121,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
       });
-      dispatch({ type: 'SET_USER', payload: response.user });
+      dispatch({ type: 'SET_USER', payload: normalizeUserRole(response.user) });
 
       // After registration, always go to complete-profile to set role
       router.replace('/(auth)/complete-profile');
@@ -146,12 +166,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function setUser(user: User | null) {
-    dispatch({ type: 'SET_USER', payload: user });
+    dispatch({ type: 'SET_USER', payload: normalizeUserRole(user) });
   }
 
   async function refreshUser() {
     const response = await apiService.getMe();
-    dispatch({ type: 'SET_USER', payload: response.user });
+    dispatch({ type: 'SET_USER', payload: normalizeUserRole(response.user) });
   }
 
   return (
