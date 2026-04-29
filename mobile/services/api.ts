@@ -290,6 +290,11 @@ class ApiService {
     return response.data;
   }
 
+  async updateProfile(data: { semester?: number }) {
+    const response = await this.api.put('/auth/profile', data);
+    return response.data;
+  }
+
   // ============ Student Endpoints (Teacher) ============
 
   async getStudents(params?: { subjectId?: string; branch?: string; semester?: number }) {

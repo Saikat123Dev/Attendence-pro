@@ -46,6 +46,7 @@ export default function SubjectsScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingSubject, setEditingSubject] = useState<any>(null);
   const [actionSubjectId, setActionSubjectId] = useState<string | null>(null);
+  const [subjectStats, setSubjectStats] = useState<Record<string, any>>({});
 
   const [formData, setFormData] = useState({
     name: '',
@@ -69,6 +70,20 @@ export default function SubjectsScreen() {
         ]);
         setSubjects(enrolledRes.subjects || []);
         setAvailableSubjects(availableRes.subjects || []);
+        // Load attendance stats for each enrolled subject
+        const enrolledSubjects = enrolledRes.subjects || [];
+        const statsMap: Record<string, any> = {};
+        await Promise.all(
+          enrolledSubjects.map(async (subject: any) => {
+            try {
+              const statsRes = await apiService.getMyStats(subject._id);
+              statsMap[subject._id] = statsRes;
+            } catch (err) {
+              console.error('Error loading stats for subject:', subject._id);
+            }
+          })
+        );
+        setSubjectStats(statsMap);
       }
     } catch (err: any) {
       console.error('Error loading subjects:', err);
@@ -389,6 +404,13 @@ export default function SubjectsScreen() {
                         size="sm"
                       />
                     )}
+                    {!isTeacher && subjectStats[subject._id] && (
+                      <Badge
+                        text={`${Math.round(subjectStats[subject._id]?.attendancePercentage || 0)}%`}
+                        variant={(subjectStats[subject._id]?.attendancePercentage || 0) >= 75 ? 'success' : 'danger'}
+                        size="sm"
+                      />
+                    )}
                   </View>
                 </View>
               </Pressable>
@@ -461,22 +483,31 @@ export default function SubjectsScreen() {
           transparent={true}
           onRequestClose={() => setShowModal(false)}
         >
-          <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 10}
+            style={styles.modalOverlay}
+          >
             <Pressable
               style={styles.modalBackdrop}
               onPress={() => setShowModal(false)}
             />
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
-                  {editingSubject ? 'Edit Subject' : 'Create Subject'}
-                </Text>
-                <Pressable onPress={() => setShowModal(false)}>
-                  <MaterialIcons name="close" size={22} color={theme.textSecondary} />
-                </Pressable>
-              </View>
+            <ScrollView
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>
+                    {editingSubject ? 'Edit Subject' : 'Create Subject'}
+                  </Text>
+                  <Pressable onPress={() => setShowModal(false)}>
+                    <MaterialIcons name="close" size={22} color={theme.textSecondary} />
+                  </Pressable>
+                </View>
 
-              <View style={styles.form}>
+                <View style={styles.form}>
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Subject Name *</Text>
                   <Input
@@ -538,7 +569,8 @@ export default function SubjectsScreen() {
                 </Pressable>
               </View>
             </View>
-          </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </Modal>
       )}
     </View>
@@ -793,6 +825,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: spacing.lg,
     paddingBottom: spacing.xxl,
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
   },
   modalHeader: {
     flexDirection: 'row',

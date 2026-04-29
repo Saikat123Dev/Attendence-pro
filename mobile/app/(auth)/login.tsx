@@ -48,7 +48,8 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 10}
       style={styles.container}
     >
       <LinearGradient
@@ -59,6 +60,7 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 10}
       >
         <View style={styles.brandWrap}>
           <View style={styles.brandIcon}>

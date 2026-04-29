@@ -50,9 +50,19 @@ export default function AttendanceScreen() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedSessionDetails, setSelectedSessionDetails] = useState<any>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+  const [dateFilter, setDateFilter] = useState<'7' | '30' | 'all'>('30');
 
   const isTeacher = user?.role === 'TEACHER';
   const accentColor = isTeacher ? theme.primary : theme.success;
+
+  // Calculate date filter
+  const getStartDate = () => {
+    if (dateFilter === 'all') return null;
+    const days = parseInt(dateFilter, 10);
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    return date.toISOString();
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -60,8 +70,9 @@ export default function AttendanceScreen() {
         const historyRes = await apiService.getSessionHistory();
         setSessions(historyRes.sessions || []);
       } else {
+        const startDate = getStartDate();
         const [recordsRes, statsRes] = await Promise.all([
-          apiService.getMyAttendance(selectedSubject ? { subjectId: selectedSubject } : undefined),
+          apiService.getMyAttendance(selectedSubject ? { subjectId: selectedSubject, startDate } : { startDate }),
           apiService.getMyStats(selectedSubject || undefined),
         ]);
         setRecords(recordsRes.records || []);
@@ -72,7 +83,7 @@ export default function AttendanceScreen() {
     } finally {
       setLoading(false);
     }
-  }, [isTeacher, selectedSubject]);
+  }, [isTeacher, selectedSubject, dateFilter]);
 
   useEffect(() => {
     loadData();
@@ -428,6 +439,40 @@ export default function AttendanceScreen() {
         </View>
       </LinearGradient>
 
+      {/* Date Filter */}
+      <View style={styles.dateFilterSection}>
+        <View style={styles.dateFilterHeader}>
+          <Text style={styles.dateFilterLabel}>Time Period</Text>
+        </View>
+        <View style={styles.dateFilterButtons}>
+          {[
+            { key: '7', label: '7 Days' },
+            { key: '30', label: '30 Days' },
+            { key: 'all', label: 'All Time' },
+          ].map((option) => (
+            <Pressable
+              key={option.key}
+              style={[
+                styles.dateFilterButton,
+                dateFilter === option.key && styles.dateFilterButtonActive,
+              ]}
+              onPress={() => setDateFilter(option.key as any)}
+            >
+              {dateFilter === option.key ? (
+                <LinearGradient
+                  colors={[theme.success, '#059669']}
+                  style={styles.dateFilterButtonGradient}
+                >
+                  <Text style={styles.dateFilterButtonTextActive}>{option.label}</Text>
+                </LinearGradient>
+              ) : (
+                <Text style={styles.dateFilterButtonText}>{option.label}</Text>
+              )}
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
       {/* Subject Filter */}
       <View style={styles.filterSection}>
         <View style={styles.filterHeader}>
@@ -646,6 +691,42 @@ const styles = StyleSheet.create({
   },
   filterScroll: {
     paddingVertical: spacing.xs,
+  },
+  dateFilterSection: {
+    marginBottom: spacing.md,
+  },
+  dateFilterHeader: {
+    marginBottom: spacing.sm,
+  },
+  dateFilterLabel: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: theme.textPrimary,
+  },
+  dateFilterButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  dateFilterButton: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  dateFilterButtonActive: {},
+  dateFilterButtonGradient: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  dateFilterButtonText: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: fontSize.sm,
+    color: theme.textSecondary,
+    fontWeight: '600',
+  },
+  dateFilterButtonTextActive: {
+    fontSize: fontSize.sm,
+    color: colors.white,
+    fontWeight: '600',
   },
   filterChip: {
     marginRight: spacing.sm,

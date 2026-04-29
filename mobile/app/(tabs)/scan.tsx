@@ -52,7 +52,10 @@ export default function ScanScreen() {
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [isStarting, setIsStarting] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+  const [sessionElapsed, setSessionElapsed] = useState(0);
   const qrIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isTeacher = user?.role === 'TEACHER';
 
@@ -102,6 +105,13 @@ export default function ScanScreen() {
       loadSubjects();
     }
   }, [isTeacher, loadActiveSessions, loadSubjects]);
+
+  // Reload subjects whenever modal opens (to catch newly created subjects)
+  useEffect(() => {
+    if (isTeacher && showSubjectModal) {
+      loadSubjects();
+    }
+  }, [isTeacher, showSubjectModal, loadSubjects]);
 
   useEffect(() => {
     if (qrIntervalRef.current) {
@@ -178,7 +188,40 @@ export default function ScanScreen() {
 
   function selectSession(session: any) {
     setSelectedSession(session);
+    setSessionStartTime(session.startedAt ? new Date(session.startedAt).getTime() : Date.now());
     fetchQRToken(session._id);
+  }
+
+  // Session timer effect
+  useEffect(() => {
+    if (selectedSession && sessionStartTime) {
+      // Update immediately
+      setSessionElapsed(Math.floor((Date.now() - sessionStartTime) / 1000));
+      // Update every second
+      timerRef.current = setInterval(() => {
+        setSessionElapsed(Math.floor((Date.now() - sessionStartTime) / 1000));
+      }, 1000);
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      };
+    } else {
+      setSessionElapsed(0);
+    }
+  }, [selectedSession, sessionStartTime]);
+
+  function formatElapsedTime(seconds: number): string {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) {
+      return `${hrs}h ${mins}m ${secs}s`;
+    } else if (mins > 0) {
+      return `${mins}m ${secs}s`;
+    }
+    return `${secs}s`;
   }
 
   // Camera permission flow is only required for students
@@ -228,6 +271,10 @@ export default function ScanScreen() {
               <View style={styles.qrCardHeader}>
                 <Badge text="LIVE" variant="success" size="md" />
                 <View style={styles.liveIndicator} />
+              </View>
+              <View style={styles.timerContainer}>
+                <MaterialIcons name="timer" size={16} color={theme.textSecondary} />
+                <Text style={styles.timerText}>{formatElapsedTime(sessionElapsed)}</Text>
               </View>
               <Text style={styles.qrSubjectName}>
                 {(selectedSession.subjectId as any)?.name}
@@ -786,6 +833,21 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: theme.success,
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    backgroundColor: theme.background,
+    borderRadius: 12,
+  },
+  timerText: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: theme.textSecondary,
   },
   qrSubjectName: {
     fontSize: fontSize.xxl,

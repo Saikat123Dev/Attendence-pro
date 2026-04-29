@@ -88,6 +88,19 @@ async function me(req, res, next) {
 }
 
 /**
+ * Update user profile (e.g., semester for students)
+ * PUT /api/auth/profile
+ */
+async function updateProfile(req, res, next) {
+  try {
+    const result = await authService.updateProfile(req.user.sub, req.body);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
  * Complete user profile (set role)
  * POST /api/auth/complete-profile
  */
@@ -107,4 +120,5 @@ module.exports = {
   logout,
   me,
   completeProfile,
+  updateProfile,
 };

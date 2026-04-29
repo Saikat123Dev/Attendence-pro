@@ -50,4 +50,11 @@ router.get('/me', authenticate, authController.me);
  */
 router.post('/complete-profile', authenticate, validate(schemas.completeProfile), authController.completeProfile);
 
+/**
+ * @route   PUT /api/auth/profile
+ * @desc    Update user profile (e.g., semester for students)
+ * @access  Private
+ */
+router.put('/profile', authenticate, authController.updateProfile);
+
 module.exports = router;

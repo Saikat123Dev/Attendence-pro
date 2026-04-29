@@ -319,6 +319,44 @@ async function getFullUser(userId) {
   };
 }
 
+/**
+ * Update user profile (semester for students, etc.)
+ * @param {string} userId - User ID from JWT
+ * @param {Object} profileData - Fields to update
+ * @returns {Object} { user }
+ */
+async function updateProfile(userId, profileData) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw Object.assign(new Error('User not found'), { status: 404, error: 'USER_NOT_FOUND' });
+  }
+
+  if (!user.role) {
+    throw Object.assign(new Error('Profile not completed yet'), { status: 400, error: 'PROFILE_INCOMPLETE' });
+  }
+
+  // Only allow semester update for students currently
+  if (user.role.toUpperCase() === 'STUDENT') {
+    const normalizedRole = 'STUDENT';
+
+    if (profileData.semester !== undefined) {
+      const semester = parseInt(profileData.semester, 10);
+      if (!Number.isInteger(semester) || semester < 1 || semester > 8) {
+        throw Object.assign(new Error('Semester must be between 1 and 8'), { status: 400, error: 'INVALID_SEMESTER' });
+      }
+
+      await Student.findOneAndUpdate(
+        { userId: user._id },
+        { $set: { semester } },
+        { new: true, runValidators: true }
+      );
+    }
+  }
+
+  const fullUser = await getFullUser(user._id);
+  return { user: fullUser };
+}
+
 module.exports = {
   register,
   login,
@@ -327,4 +365,5 @@ module.exports = {
   generateTokens,
   getFullUser,
   completeProfile,
+  updateProfile,
 };

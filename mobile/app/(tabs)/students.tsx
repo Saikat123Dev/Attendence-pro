@@ -12,6 +12,7 @@ import {
   Pressable,
   Alert,
   Modal,
+  TextInput,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
@@ -44,6 +45,11 @@ export default function StudentsScreen() {
   const [enrolling, setEnrolling] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [studentListVersion, setStudentListVersion] = useState(0);
+  const [branchFilter, setBranchFilter] = useState<string | null>(null);
+  const [semesterFilter, setSemesterFilter] = useState<number | null>(null);
+  const [availableBranches, setAvailableBranches] = useState<string[]>([]);
+  const [availableSemesters, setAvailableSemesters] = useState<number[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadSubjects();
@@ -53,6 +59,15 @@ export default function StudentsScreen() {
     try {
       const res = await apiService.getMySubjects();
       setSubjects(res.subjects || []);
+      // Also load available students to extract branch/semester options
+      if (res.subjects?.length > 0) {
+        const res2 = await apiService.getAvailableStudents(res.subjects[0]._id);
+        const students = res2.students || [];
+        const branches = [...new Set(students.map((s: any) => s.branch).filter(Boolean))] as string[];
+        const semesters = [...new Set(students.map((s: any) => s.semester).filter(Boolean))] as number[];
+        setAvailableBranches(branches.sort());
+        setAvailableSemesters(semesters.sort((a, b) => a - b));
+      }
     } catch (err) {
       console.error('Error loading subjects:', err);
     } finally {
@@ -60,10 +75,17 @@ export default function StudentsScreen() {
     }
   }
 
-  async function loadAvailableStudents(subjectId: string) {
+  async function loadAvailableStudents(subjectId: string, filters?: { branch?: string; semester?: number }) {
     try {
       const res = await apiService.getAvailableStudents(subjectId);
-      setAvailableStudents(res.students || []);
+      let students = res.students || [];
+      if (filters?.branch) {
+        students = students.filter((s: any) => s.branch === filters.branch);
+      }
+      if (filters?.semester) {
+        students = students.filter((s: any) => s.semester === filters.semester);
+      }
+      setAvailableStudents(students);
     } catch (err) {
       console.error('Error loading available students:', err);
     }
@@ -151,6 +173,77 @@ export default function StudentsScreen() {
         </View>
       </View>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchIconBg}>
+          <MaterialIcons name="search" size={18} color={theme.textSecondary} />
+        </View>
+        <View style={styles.searchInputContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by name or roll number..."
+            placeholderTextColor={theme.textSecondary}
+            value={searchQuery}
+            onChangeText={(text) => setSearchQuery(text)}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+        {searchQuery.length > 0 && (
+          <Pressable style={styles.clearButton} onPress={() => setSearchQuery('')}>
+            <MaterialIcons name="close" size={18} color={theme.textSecondary} />
+          </Pressable>
+        )}
+      </View>
+
+      {/* Filter Section */}
+      <View style={styles.filterSection}>
+        <View style={styles.filterRow}>
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>Branch</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <Pressable
+                style={[styles.filterChip, !branchFilter && styles.filterChipActive]}
+                onPress={() => setBranchFilter(null)}
+              >
+                <Text style={[styles.filterChipText, !branchFilter && styles.filterChipTextActive]}>All</Text>
+              </Pressable>
+              {availableBranches.map((branch) => (
+                <Pressable
+                  key={branch}
+                  style={[styles.filterChip, branchFilter === branch && styles.filterChipActive]}
+                  onPress={() => setBranchFilter(branch)}
+                >
+                  <Text style={[styles.filterChipText, branchFilter === branch && styles.filterChipTextActive]}>{branch}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+        <View style={styles.filterRow}>
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>Semester</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <Pressable
+                style={[styles.filterChip, semesterFilter === null && styles.filterChipActive]}
+                onPress={() => setSemesterFilter(null)}
+              >
+                <Text style={[styles.filterChipText, semesterFilter === null && styles.filterChipTextActive]}>All</Text>
+              </Pressable>
+              {availableSemesters.map((sem) => (
+                <Pressable
+                  key={sem}
+                  style={[styles.filterChip, semesterFilter === sem && styles.filterChipActive]}
+                  onPress={() => setSemesterFilter(sem)}
+                >
+                  <Text style={[styles.filterChipText, semesterFilter === sem && styles.filterChipTextActive]}>Sem {sem}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -198,6 +291,7 @@ export default function StudentsScreen() {
                 <StudentList
                   subjectId={subject._id}
                   refreshKey={studentListVersion}
+                  searchQuery={searchQuery}
                   onUnenroll={(studentId: string, studentName: string) =>
                     unenrollStudent(subject, studentId, studentName)
                   }
@@ -215,20 +309,29 @@ export default function StudentsScreen() {
         animationType="slide"
         onRequestClose={() => setShowEnrollModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 10}
+          style={styles.modalOverlay}
+        >
           <Pressable style={styles.modalBackdrop} onPress={() => setShowEnrollModal(false)} />
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Enroll Students</Text>
-              <Pressable onPress={() => setShowEnrollModal(false)}>
-                <MaterialIcons name="close" size={22} color={theme.textSecondary} />
-              </Pressable>
-            </View>
-            <Text style={styles.modalSubtitle}>
-              {selectedSubject?.name} ({selectedSubject?.code})
-            </Text>
+          <ScrollView
+            contentContainerStyle={styles.modalScrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Enroll Students</Text>
+                <Pressable onPress={() => setShowEnrollModal(false)}>
+                  <MaterialIcons name="close" size={22} color={theme.textSecondary} />
+                </Pressable>
+              </View>
+              <Text style={styles.modalSubtitle}>
+                {selectedSubject?.name} ({selectedSubject?.code})
+              </Text>
 
-            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               {availableStudents.length === 0 ? (
                 <View style={styles.modalEmpty}>
                   <Text style={styles.modalEmptyText}>
@@ -292,13 +395,15 @@ export default function StudentsScreen() {
               </View>
             )}
           </View>
-        </View>
+          </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
 }
 
-function StudentList({ subjectId, refreshKey, onUnenroll }: any) {
+function StudentList({ subjectId, refreshKey, onUnenroll, searchQuery }: any) {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -307,17 +412,26 @@ function StudentList({ subjectId, refreshKey, onUnenroll }: any) {
     setLoading(true);
     try {
       const res = await apiService.getSubject(subjectId);
-      const allStudents = (res.enrolledStudents || []).map((student: any) => ({
+      let allStudents = (res.enrolledStudents || []).map((student: any) => ({
         ...student,
         status: 'ENROLLED',
       }));
+      // Apply search filter
+      if (searchQuery && searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        allStudents = allStudents.filter((s: any) =>
+          (s.name?.toLowerCase().includes(query)) ||
+          (s.rollNumber?.toLowerCase().includes(query)) ||
+          (s.registrationNumber?.toLowerCase().includes(query))
+        );
+      }
       setStudents(allStudents);
     } catch (err) {
       console.error('Error loading students:', err);
     } finally {
       setLoading(false);
     }
-  }, [subjectId]);
+  }, [subjectId, searchQuery]);
 
   useEffect(() => {
     loadStudents();
@@ -483,6 +597,74 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: fontSize.sm,
   },
+  // Filter Section
+  filterSection: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  filterRow: {
+    gap: spacing.xs,
+  },
+  filterGroup: {
+    gap: spacing.xs,
+  },
+  filterLabel: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+    fontWeight: '600',
+  },
+  filterChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 16,
+    backgroundColor: theme.card,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginRight: spacing.xs,
+  },
+  filterChipActive: {
+    backgroundColor: theme.primary + '20',
+    borderColor: theme.primary,
+  },
+  filterChipText: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+    fontWeight: '600',
+  },
+  filterChipTextActive: {
+    color: theme.primary,
+  },
+  // Search Bar
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  searchIconBg: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: 1,
+    borderRightColor: theme.border,
+  },
+  searchInputContainer: {
+    flex: 1,
+  },
+  searchInput: {
+    padding: spacing.md,
+    fontSize: fontSize.md,
+    color: theme.textPrimary,
+  },
+  clearButton: {
+    padding: spacing.md,
+  },
   studentListContainer: {
     marginTop: spacing.md,
     paddingTop: spacing.md,
@@ -575,6 +757,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: spacing.lg,
     maxHeight: '80%',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
   },
   modalHeader: {
     flexDirection: 'row',

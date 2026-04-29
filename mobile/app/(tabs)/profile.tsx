@@ -2,6 +2,7 @@
  * Profile Screen - AttendX Dark Pro Theme
  * Gradient header with avatar, info rows, subject chips, logout button
  */
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -10,10 +11,14 @@ import {
   TouchableOpacity,
   Alert,
   Pressable,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
+import { apiService } from '@/services/api';
 import { Avatar, Badge } from '@/components/ui';
 import { colors, spacing, fontSize } from '@/constants/theme';
 import { StudentProfile, TeacherProfile, Subject } from '@/types';
@@ -35,7 +40,12 @@ const theme = {
 };
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
+  const [showSemesterModal, setShowSemesterModal] = useState(false);
+  const [selectedSemester, setSelectedSemester] = useState<number>(
+    (user?.profile as StudentProfile)?.semester || 1
+  );
+  const [updatingSemester, setUpdatingSemester] = useState(false);
 
   const isTeacher = user?.role === 'TEACHER';
   const profile = isTeacher
@@ -46,6 +56,20 @@ export default function ProfileScreen() {
   const headerGradient = isTeacher
     ? ['#4F6EF7', '#2D7DD2']
     : ['#10B981', '#059669'];
+
+  async function handleUpdateSemester() {
+    setUpdatingSemester(true);
+    try {
+      await apiService.updateProfile({ semester: selectedSemester });
+      await refreshUser();
+      setShowSemesterModal(false);
+      Alert.alert('Success', 'Semester updated successfully');
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to update semester');
+    } finally {
+      setUpdatingSemester(false);
+    }
+  }
 
   function handleLogout() {
     Alert.alert(
@@ -161,9 +185,24 @@ export default function ProfileScreen() {
                 <View style={styles.detailLabelContainer}>
                   <Text style={styles.detailLabel}>Semester</Text>
                 </View>
-                <Text style={styles.detailValue}>
-                  {(profile as StudentProfile)?.semester || 'N/A'}
-                </Text>
+                {isTeacher ? (
+                  <Text style={styles.detailValue}>
+                    {(profile as StudentProfile)?.semester || 'N/A'}
+                  </Text>
+                ) : (
+                  <Pressable
+                    style={styles.editableField}
+                    onPress={() => {
+                      setSelectedSemester((profile as StudentProfile)?.semester || 1);
+                      setShowSemesterModal(true);
+                    }}
+                  >
+                    <Text style={styles.detailValue}>
+                      {(profile as StudentProfile)?.semester || 'N/A'}
+                    </Text>
+                    <MaterialIcons name="edit" size={14} color={theme.primary} />
+                  </Pressable>
+                )}
               </View>
             </>
           )}
@@ -275,6 +314,75 @@ export default function ProfileScreen() {
           </View>
         </LinearGradient>
       </View>
+
+      {/* Semester Picker Modal - Student only */}
+      {!isTeacher && (
+        <Modal
+          visible={showSemesterModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowSemesterModal(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 10}
+            style={styles.modalOverlay}
+          >
+            <Pressable style={styles.modalBackdrop} onPress={() => setShowSemesterModal(false)} />
+            <ScrollView
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.modalCard}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Update Semester</Text>
+                  <Pressable onPress={() => setShowSemesterModal(false)}>
+                    <MaterialIcons name="close" size={22} color={theme.textSecondary} />
+                  </Pressable>
+                </View>
+                <Text style={styles.modalSubtitle}>Select your current semester</Text>
+
+                <View style={styles.semesterGrid}>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                    <Pressable
+                      key={sem}
+                      style={[
+                        styles.semesterItem,
+                        selectedSemester === sem && styles.semesterItemSelected,
+                      ]}
+                      onPress={() => setSelectedSemester(sem)}
+                    >
+                      <Text
+                        style={[
+                          styles.semesterItemText,
+                          selectedSemester === sem && styles.semesterItemTextSelected,
+                        ]}
+                      >
+                        Sem {sem}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Pressable
+                  style={[
+                    styles.updateButton,
+                    (updatingSemester || selectedSemester === (profile as StudentProfile)?.semester) &&
+                      styles.updateButtonDisabled,
+                  ]}
+                  onPress={handleUpdateSemester}
+                  disabled={updatingSemester || selectedSemester === (profile as StudentProfile)?.semester}
+                >
+                  <Text style={styles.updateButtonText}>
+                    {updatingSemester ? 'Updating...' : 'Update Semester'}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
 
       {/* Logout Button with Danger Gradient */}
       <Pressable
@@ -476,5 +584,92 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: fontSize.md,
     letterSpacing: 0.5,
+  },
+  editableField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.85)',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modalCard: {
+    width: '85%',
+    backgroundColor: theme.card,
+    borderRadius: 20,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  modalTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: '800',
+    color: theme.textPrimary,
+  },
+  modalSubtitle: {
+    fontSize: fontSize.sm,
+    color: theme.textSecondary,
+    marginBottom: spacing.lg,
+  },
+  semesterGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  semesterItem: {
+    width: '30%',
+    paddingVertical: spacing.md,
+    borderRadius: 12,
+    alignItems: 'center',
+    backgroundColor: theme.background,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  semesterItemSelected: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary + '20',
+  },
+  semesterItemText: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: theme.textSecondary,
+  },
+  semesterItemTextSelected: {
+    color: theme.primary,
+  },
+  updateButton: {
+    backgroundColor: theme.primary,
+    borderRadius: 12,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  updateButtonDisabled: {
+    opacity: 0.5,
+  },
+  updateButtonText: {
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: fontSize.md,
   },
 });
