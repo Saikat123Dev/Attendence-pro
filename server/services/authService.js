@@ -120,8 +120,10 @@ async function register(userData) {
           return { user: fullUser, ...tokens };
         }
       }
+      // Existing user (with role already set, or different password) → clear error so client knows to login
+      err.error = 'DUPLICATE_ENTRY';
+      err.status = 409;
     }
-
     throw err;
   }
 
@@ -156,11 +158,19 @@ async function completeProfile(userId, profileData) {
     throw Object.assign(new Error('User not found'), { status: 404, error: 'USER_NOT_FOUND' });
   }
 
+  // Allow re-completing the same role (idempotent), but block changing to a different role.
   if (user.role && user.role.toUpperCase() !== normalizedRole) {
     throw Object.assign(new Error('Profile role mismatch'), {
       status: 400,
       error: 'PROFILE_ROLE_MISMATCH',
     });
+  }
+
+  // If role is already set to the same value, treat as success (idempotent).
+  if (user.role && user.role.toUpperCase() === normalizedRole) {
+    const fullUser = await getFullUser(user._id);
+    const tokens = await generateTokens({ ...user, role: normalizedRole });
+    return { user: fullUser, ...tokens };
   }
 
   // Update the existing user record in place so the completion step stays idempotent.
