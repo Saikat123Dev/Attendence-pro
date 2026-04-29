@@ -13,6 +13,8 @@ import {
   Alert,
   Modal,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
@@ -394,7 +396,6 @@ export default function StudentsScreen() {
                 </Pressable>
               </View>
             )}
-          </View>
           </View>
           </ScrollView>
         </KeyboardAvoidingView>
