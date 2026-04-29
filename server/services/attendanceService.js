@@ -200,16 +200,20 @@ async function markAttendance(sessionId, qrData, studentId, deviceInfo) {
     ? session.enrolledStudentIds.map((id) => id.toString())
     : null;
 
+  // Check if student is currently enrolled in the subject
+  const isCurrentlyEnrolled = student.subjects.some(
+    (subjectId) => subjectId.toString() === session.subjectId.toString()
+  );
+
   // Check if student was part of the roster when the session started
   if (sessionRoster) {
-    if (!sessionRoster.includes(studentId.toString())) {
+    const wasInRoster = sessionRoster.includes(studentId.toString());
+    // Allow if student was in roster OR is currently enrolled in the subject
+    if (!wasInRoster && !isCurrentlyEnrolled) {
       throw Object.assign(new Error('STUDENT_NOT_IN_SESSION_ROSTER'), { status: 403 });
     }
   } else {
-    const isEnrolled = student.subjects.some(
-      (subjectId) => subjectId.toString() === session.subjectId.toString()
-    );
-    if (!isEnrolled) {
+    if (!isCurrentlyEnrolled) {
       throw Object.assign(new Error('STUDENT_NOT_IN_SUBJECT'), { status: 403 });
     }
   }
