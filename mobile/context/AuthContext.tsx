@@ -105,10 +105,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function navigateAfterAuth(user: User | null) {
     // If authenticated but no role or profile, go to complete-profile
     // Otherwise go to tabs
-    if (user && (!user.role || !user.profile)) {
-      router.replace('/(auth)/complete-profile');
-    } else {
-      router.replace('/(tabs)');
+    try {
+      if (!user) return;
+
+      // Defer navigation to avoid conflicting router.replace calls during render
+      if (!user.role || !user.profile) {
+        setTimeout(() => router.replace('/(auth)/complete-profile'), 0);
+      } else {
+        setTimeout(() => router.replace('/(tabs)'), 0);
+      }
+    } catch (err) {
+      console.error('navigateAfterAuth error', err);
     }
   }
 

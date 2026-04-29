@@ -37,6 +37,8 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await login(email.trim(), password);
+    } catch (err) {
+      // Error is handled in context and shown in UI
     } finally {
       setIsLoading(false);
     }

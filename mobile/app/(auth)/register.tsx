@@ -74,6 +74,8 @@ export default function RegisterScreen() {
         email: formData.email.trim(),
         password: formData.password,
       });
+    } catch {
+      // Error handled in context
     } finally {
       setIsLoading(false);
       submitLockRef.current = false;

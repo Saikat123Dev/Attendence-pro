@@ -42,5 +42,8 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  // If mapping is missing for a symbol, fall back to a safe Material icon name
+  // to avoid passing `undefined` to the icon component which can crash on some platforms.
+  const mapped = (MAPPING as Record<string, string>)[name] ?? 'help-outline';
+  return <MaterialIcons color={color} size={size} name={mapped as any} style={style} />;
 }
