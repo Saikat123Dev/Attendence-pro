@@ -85,7 +85,38 @@ export default function CompleteProfileScreen() {
       setUser(user);
       router.replace('/(tabs)');
     } catch (error: any) {
+      const errorCode = error.response?.data?.error;
       const errorMsg = error.response?.data?.message || 'Failed to complete profile';
+
+      // If the backend reports a duplicate entry during profile completion,
+      // the account already exists. Re-load the authenticated user and continue.
+      if (errorCode === 'DUPLICATE_ENTRY') {
+        try {
+          const hasToken = await apiService.hasValidToken();
+          if (hasToken) {
+            const resp = await apiService.getMe();
+            setUser(resp.user);
+            router.replace('/(tabs)');
+            return;
+          }
+        } catch {
+          // fall through to the generic error handling below
+        }
+      }
+
+      // If we have a valid session (token), try refreshing local user and continue.
+      try {
+        const hasToken = await apiService.hasValidToken();
+        if (hasToken) {
+          const resp = await apiService.getMe();
+          setUser(resp.user);
+          router.replace('/(tabs)');
+          return;
+        }
+      } catch {
+        // fallthrough to generic alert
+      }
+
       Alert.alert('Error', errorMsg);
     } finally {
       setIsLoading(false);

@@ -56,14 +56,12 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "44f7e89a-d36c-4281-86a4-798ee1182cc1"
+        "projectId": "9da06cdd-d617-44d5-9449-facfaaaeaf38"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "updates": {
-      "url": "https://u.expo.dev/44f7e89a-d36c-4281-86a4-798ee1182cc1"
-    }
+    "owner": "saikat123dev"
   }
 }

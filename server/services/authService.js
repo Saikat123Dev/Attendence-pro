@@ -163,29 +163,37 @@ async function completeProfile(userId, profileData) {
     });
   }
 
-  // Set role on user
-  user.role = normalizedRole;
-  await user.save();
+  // Update the existing user record in place so the completion step stays idempotent.
+  const updatedUser = await User.findByIdAndUpdate(
+    user._id,
+    { $set: { role: normalizedRole } },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedUser) {
+    throw Object.assign(new Error('User not found'), { status: 404, error: 'USER_NOT_FOUND' });
+  }
 
   // Generate new tokens with the correct role
-  const tokens = await generateTokens(user);
+  const tokens = await generateTokens(updatedUser);
 
-  // Create role-specific profile
+  // Create or update the role-specific profile for this user.
+  // The unique key is userId, so repeated submissions update the same record.
   if (normalizedRole === 'STUDENT') {
     await Student.findOneAndUpdate(
       { userId: user._id },
       {
         $set: {
           userId: user._id,
-          name: user.name,
-          rollNumber: roleSpecificData.rollNumber,
-          registrationNumber: roleSpecificData.registrationNumber,
-          branch: roleSpecificData.branch,
+          name: updatedUser.name,
+          rollNumber: roleSpecificData.rollNumber?.trim().toUpperCase(),
+          registrationNumber: roleSpecificData.registrationNumber?.trim().toUpperCase(),
+          branch: roleSpecificData.branch?.trim().toUpperCase(),
           semester: roleSpecificData.semester,
         },
         $setOnInsert: { subjects: [] },
       },
-      { upsert: true, new: true, runValidators: true }
+      { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
     );
   } else if (normalizedRole === 'TEACHER') {
     await Teacher.findOneAndUpdate(
@@ -193,13 +201,13 @@ async function completeProfile(userId, profileData) {
       {
         $set: {
           userId: user._id,
-          name: user.name,
-          employeeId: roleSpecificData.employeeId,
-          department: roleSpecificData.department,
+          name: updatedUser.name,
+          employeeId: roleSpecificData.employeeId?.trim().toUpperCase(),
+          department: roleSpecificData.department?.trim().toUpperCase(),
         },
         $setOnInsert: { subjects: [] },
       },
-      { upsert: true, new: true, runValidators: true }
+      { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
     );
   }
 
