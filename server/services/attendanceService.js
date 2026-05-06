@@ -196,13 +196,20 @@ async function markAttendance(sessionId, qrData, studentId, deviceInfo) {
     throw Object.assign(new Error('STUDENT_NOT_FOUND'), { status: 404 });
   }
 
+  // Get session roster for comparison
   const sessionRoster = Array.isArray(session.enrolledStudentIds)
     ? session.enrolledStudentIds.map((id) => id.toString())
     : null;
 
+  // Convert subjectId to string for comparison
+  const sessionSubjectIdStr = session.subjectId.toString();
+
+  // Ensure student.subjects exists (default to empty array if undefined)
+  const studentSubjects = student.subjects || [];
+
   // Check if student is currently enrolled in the subject
-  const isCurrentlyEnrolled = student.subjects.some(
-    (subjectId) => subjectId.toString() === session.subjectId.toString()
+  const isCurrentlyEnrolled = studentSubjects.some(
+    (subjectId) => subjectId.toString() === sessionSubjectIdStr
   );
 
   // Check if student was part of the roster when the session started

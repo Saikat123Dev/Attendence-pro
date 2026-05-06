@@ -51,6 +51,10 @@ export default function AttendanceScreen() {
   const [selectedSessionDetails, setSelectedSessionDetails] = useState<any>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [dateFilter, setDateFilter] = useState<'7' | '30' | 'all'>('30');
+  const [subjectAnalytics, setSubjectAnalytics] = useState<any[]>([]);
+  const [selectedSubjectAnalytics, setSelectedSubjectAnalytics] = useState<any>(null);
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
 
   const isTeacher = user?.role === 'TEACHER';
   const accentColor = isTeacher ? theme.primary : theme.success;
@@ -69,6 +73,17 @@ export default function AttendanceScreen() {
       if (isTeacher) {
         const historyRes = await apiService.getSessionHistory();
         setSessions(historyRes.sessions || []);
+        // Load subject analytics for attendance percentage view
+        try {
+          const subjectsRes = await apiService.getMySubjects();
+          const analyticsPromises = (subjectsRes.subjects || []).map((subject: any) =>
+            apiService.getSubjectAnalytics(subject._id).catch(() => null)
+          );
+          const analyticsResults = await Promise.all(analyticsPromises);
+          setSubjectAnalytics(analyticsResults.filter(Boolean));
+        } catch (analyticsErr) {
+          console.error('Error loading analytics:', analyticsErr);
+        }
       } else {
         const startDate = getStartDate();
         const [recordsRes, statsRes] = await Promise.all([
@@ -148,6 +163,93 @@ export default function AttendanceScreen() {
                   <Text style={styles.alertActionText}>View QR</Text>
                 </Pressable>
               </View>
+            </View>
+          )}
+
+          {/* Analytics Summary Cards with Material Design */}
+          {subjectAnalytics.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Attendance Analytics</Text>
+                <Pressable onPress={() => setShowAnalyticsModal(true)}>
+                  <Text style={styles.seeAll}>View All →</Text>
+                </Pressable>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.analyticsScroll}
+              >
+                {subjectAnalytics.slice(0, 5).map((analytics) => {
+                  const isLowAttendance = (analytics.averageAttendance || 0) < 75;
+                  return (
+                    <Pressable
+                      key={analytics.subject?._id}
+                      style={({ pressed }) => [
+                        styles.analyticsCard,
+                        pressed && styles.sessionItemPressed,
+                      ]}
+                      onPress={() => {
+                        setSelectedSubjectAnalytics(analytics);
+                        setShowAnalyticsModal(true);
+                      }}
+                    >
+                      <LinearGradient
+                        colors={isLowAttendance ? ['#3A1A22', '#2D1A1C'] : ['#0E2B24', '#122A20']}
+                        style={styles.analyticsCardGradient}
+                      >
+                        <View style={styles.analyticsCardHeader}>
+                          <Text style={styles.analyticsSubject} numberOfLines={1}>
+                            {analytics.subject?.code || 'SUB'}
+                          </Text>
+                          <View
+                            style={[
+                              styles.analyticsBadge,
+                              isLowAttendance
+                                ? { backgroundColor: theme.danger + '30' }
+                                : { backgroundColor: theme.success + '30' },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.analyticsBadgeText,
+                                { color: isLowAttendance ? theme.danger : theme.success },
+                              ]}
+                            >
+                              {Math.round(analytics.averageAttendance || 0)}%
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={styles.analyticsSubjectName} numberOfLines={1}>
+                          {analytics.subject?.name || 'Subject'}
+                        </Text>
+                        <View style={styles.analyticsStats}>
+                          <Text style={styles.analyticsStat}>
+                            {analytics.totalStudents || 0} students
+                          </Text>
+                          <Text style={styles.analyticsStat}>
+                            {analytics.totalSessions || 0} sessions
+                          </Text>
+                        </View>
+                        {/* Attendance Progress Bar */}
+                        <View style={styles.miniProgressContainer}>
+                          <View style={styles.miniProgressBg}>
+                            <View
+                              style={[
+                                styles.miniProgressFill,
+                                {
+                                  width: `${Math.min(analytics.averageAttendance || 0, 100)}%`,
+                                  backgroundColor: isLowAttendance ? theme.danger : theme.success,
+                                },
+                              ]}
+                            />
+                          </View>
+                        </View>
+                      </LinearGradient>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
             </View>
           )}
 
@@ -359,6 +461,172 @@ export default function AttendanceScreen() {
                   </ScrollView>
                 </>
               )}
+            </View>
+          </View>
+        </Modal>
+
+        {/* Analytics Detail Modal */}
+        <Modal
+          visible={showAnalyticsModal}
+          animationType="slide"
+          transparent
+          onRequestClose={() => {
+            setShowAnalyticsModal(false);
+            setSelectedSubjectAnalytics(null);
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <Pressable
+              style={styles.modalBackdrop}
+              onPress={() => {
+                setShowAnalyticsModal(false);
+                setSelectedSubjectAnalytics(null);
+              }}
+            />
+            <View style={styles.analyticsSheet}>
+              <View style={styles.detailsHeader}>
+                <View style={styles.detailsTitleBlock}>
+                  <Text style={styles.detailsTitle}>
+                    {selectedSubjectAnalytics?.subject?.name || 'Subject Analytics'}
+                  </Text>
+                  <Text style={styles.detailsSubtitle}>
+                    {selectedSubjectAnalytics?.subject?.code || 'SUB'} •{' '}
+                    {selectedSubjectAnalytics?.totalSessions || 0} sessions
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    setShowAnalyticsModal(false);
+                    setSelectedSubjectAnalytics(null);
+                  }}
+                >
+                  <MaterialIcons name="close" size={22} color={theme.textSecondary} />
+                </Pressable>
+              </View>
+
+              {/* Class Summary */}
+              <View style={styles.analyticsSummary}>
+                <View style={styles.analyticsSummaryItem}>
+                  <Text style={styles.analyticsSummaryValue}>
+                    {selectedSubjectAnalytics?.totalStudents || 0}
+                  </Text>
+                  <Text style={styles.analyticsSummaryLabel}>Students</Text>
+                </View>
+                <View style={styles.analyticsSummaryDivider} />
+                <View style={styles.analyticsSummaryItem}>
+                  <Text
+                    style={[
+                      styles.analyticsSummaryValue,
+                      {
+                        color:
+                          (selectedSubjectAnalytics?.averageAttendance || 0) >= 75
+                            ? theme.success
+                            : theme.danger,
+                      },
+                    ]}
+                  >
+                    {Math.round(selectedSubjectAnalytics?.averageAttendance || 0)}%
+                  </Text>
+                  <Text style={styles.analyticsSummaryLabel}>Class Avg</Text>
+                </View>
+                <View style={styles.analyticsSummaryDivider} />
+                <View style={styles.analyticsSummaryItem}>
+                  <Text style={[styles.analyticsSummaryValue, { color: theme.success }]}>
+                    {selectedSubjectAnalytics?.totalPresent || 0}
+                  </Text>
+                  <Text style={styles.analyticsSummaryLabel}>Present</Text>
+                </View>
+                <View style={styles.analyticsSummaryDivider} />
+                <View style={styles.analyticsSummaryItem}>
+                  <Text style={[styles.analyticsSummaryValue, { color: theme.danger }]}>
+                    {selectedSubjectAnalytics?.totalAbsent || 0}
+                  </Text>
+                  <Text style={styles.analyticsSummaryLabel}>Absent</Text>
+                </View>
+              </View>
+
+              {/* Student List */}
+              <ScrollView
+                style={styles.analyticsStudentList}
+                showsVerticalScrollIndicator={false}
+              >
+                <Text style={styles.detailsSectionTitle}>Student Attendance</Text>
+                {(!selectedSubjectAnalytics?.byStudent ||
+                  selectedSubjectAnalytics.byStudent.length === 0) ? (
+                  <Text style={styles.detailsEmptyText}>No student data available</Text>
+                ) : (
+                  selectedSubjectAnalytics.byStudent
+                    .slice()
+                    .sort((a: any, b: any) => a.rollNumber?.localeCompare(b.rollNumber, undefined, { numeric: true }))
+                    .map((student: any) => {
+                      const percentage = student.percentage || 0;
+                      const isLow = percentage < 75;
+                      const isCritical = percentage < 60;
+                      return (
+                        <View key={student.studentId} style={styles.analyticsStudentRow}>
+                          <View
+                            style={[
+                              styles.detailsStudentAvatar,
+                              {
+                                backgroundColor: isCritical
+                                  ? theme.danger
+                                  : isLow
+                                  ? theme.warning
+                                  : theme.success,
+                              },
+                            ]}
+                          >
+                            <Text style={styles.detailsStudentAvatarText}>
+                              {student.name?.charAt(0)?.toUpperCase() || '?'}
+                            </Text>
+                          </View>
+                          <View style={styles.analyticsStudentInfo}>
+                            <Text style={styles.detailsStudentName}>{student.name || 'Student'}</Text>
+                            <Text style={styles.detailsStudentMeta}>
+                              {student.rollNumber || 'No roll'} • {student.totalSessions || 0} sessions
+                            </Text>
+                          </View>
+                          <View style={styles.analyticsPercentage}>
+                            <Text
+                              style={[
+                                styles.analyticsPercentageText,
+                                {
+                                  color: isCritical
+                                    ? theme.danger
+                                    : isLow
+                                    ? theme.warning
+                                    : theme.success,
+                                },
+                              ]}
+                            >
+                              {Math.round(percentage)}%
+                            </Text>
+                            <View
+                              style={[
+                                styles.analyticsProgressBar,
+                                { backgroundColor: theme.border },
+                              ]}
+                            >
+                              <View
+                                style={[
+                                  styles.analyticsProgressFill,
+                                  {
+                                    width: `${Math.min(percentage, 100)}%`,
+                                    backgroundColor: isCritical
+                                      ? theme.danger
+                                      : isLow
+                                      ? theme.warning
+                                      : theme.success,
+                                  },
+                                ]}
+                              />
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })
+                )}
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -1269,5 +1537,153 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: theme.textSecondary,
     marginTop: 2,
+  },
+  // Analytics scrollable list
+  analyticsScroll: {
+    paddingVertical: spacing.xs,
+  },
+  analyticsCard: {
+    width: 150,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginRight: spacing.sm,
+    // Material Design elevation
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  analyticsCardGradient: {
+    borderRadius: 16,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  analyticsCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  analyticsSubject: {
+    fontSize: fontSize.md,
+    fontWeight: '800',
+    color: theme.textPrimary,
+  },
+  analyticsBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  analyticsBadgeText: {
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+  },
+  analyticsSubjectName: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  analyticsStats: {
+    gap: 2,
+  },
+  analyticsStat: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+  },
+  // Mini progress bar for analytics cards
+  miniProgressContainer: {
+    marginTop: spacing.sm,
+  },
+  miniProgressBg: {
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  miniProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  // Analytics sheet modal
+  analyticsSheet: {
+    backgroundColor: theme.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: spacing.lg,
+    maxHeight: '86%',
+  },
+  analyticsSummary: {
+    flexDirection: 'row',
+    backgroundColor: theme.background,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  analyticsSummaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  analyticsSummaryValue: {
+    fontSize: fontSize.xl,
+    fontWeight: '800',
+    color: theme.textPrimary,
+  },
+  analyticsSummaryLabel: {
+    fontSize: fontSize.xs,
+    color: theme.textSecondary,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  analyticsSummaryDivider: {
+    width: 1,
+    backgroundColor: theme.borderLight,
+    marginHorizontal: spacing.xs,
+  },
+  analyticsStudentList: {
+    maxHeight: 480,
+  },
+  analyticsStudentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: theme.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  analyticsStudentInfo: {
+    flex: 1,
+  },
+  analyticsPercentage: {
+    alignItems: 'flex-end',
+    minWidth: 60,
+  },
+  analyticsPercentageText: {
+    fontSize: fontSize.md,
+    fontWeight: '800',
+  },
+  analyticsProgressBar: {
+    width: 60,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  analyticsProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  seeAll: {
+    fontSize: fontSize.sm,
+    color: theme.primary,
+    fontWeight: '600',
   },
 });
