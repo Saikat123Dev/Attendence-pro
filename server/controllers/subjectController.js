@@ -2,6 +2,7 @@ const Subject = require('../models/Subject');
 const Student = require('../models/Student');
 const Teacher = require('../models/Teacher');
 const AttendanceSession = require('../models/AttendanceSession');
+const AttendanceStats = require('../models/AttendanceStats');
 const {
   getTeacherIdentityByUserId,
   getStudentIdentityByUserId,
@@ -64,16 +65,42 @@ async function getSubjectById(req, res, next) {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
-    // Get enrolled students
+    // Get enrolled students with their attendance stats
     const students = await Student.find({ subjects: id })
       .select('name rollNumber branch semester')
       .sort({ rollNumber: 1 });
+
+    // Get attendance stats for all enrolled students in this subject
+    const studentIds = students.map(s => s._id);
+    const stats = await AttendanceStats.find({ subjectId: id, studentId: { $in: studentIds } });
+
+    // Create a map for quick lookup
+    const statsMap = {};
+    stats.forEach(s => {
+      statsMap[s.studentId.toString()] = s;
+    });
+
+    // Enrich students with attendance data
+    const enrichedStudents = students.map(student => {
+      const stat = statsMap[student._id.toString()];
+      return {
+        _id: student._id,
+        name: student.name,
+        rollNumber: student.rollNumber,
+        branch: student.branch,
+        semester: student.semester,
+        attendancePercentage: stat ? stat.attendancePercentage : 0,
+        totalSessions: stat ? stat.totalSessions : 0,
+        presentCount: stat ? stat.presentCount : 0,
+        absentCount: stat ? stat.absentCount : 0,
+      };
+    });
 
     await subject.populate('teacherId', 'name employeeId department');
 
     res.json({
       subject,
-      enrolledStudents: students,
+      enrolledStudents: enrichedStudents,
       studentCount: students.length,
     });
   } catch (err) {

@@ -3,10 +3,14 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { colors, spacing, fontSize } from '@/constants/theme';
 
+type ErrorBoundaryProps = {
+  children?: React.ReactNode;
+};
+
 type State = { hasError: boolean; error?: Error };
 
-export default class ErrorBoundary extends React.Component<{}, State> {
-  constructor(props: {}) {
+export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, State> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
@@ -38,8 +42,7 @@ export default class ErrorBoundary extends React.Component<{}, State> {
       );
     }
 
-    // @ts-ignore
-    return this.props.children;
+    return this.props.children ?? null;
   }
 }
 

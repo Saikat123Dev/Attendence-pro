@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         dispatch({ type: 'SET_USER', payload: null });
       }
-    } catch (error: any) {
+    } catch {
       // Token invalid or expired — clear and redirect to login
       await apiService.clearTokens();
       dispatch({ type: 'SET_USER', payload: null });

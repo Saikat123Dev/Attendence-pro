@@ -136,7 +136,7 @@ export interface SubjectAnalytics {
   averageAttendance: number;
   totalPresent: number;
   totalAbsent: number;
-  byStudent: Array<{
+  byStudent: {
     studentId: string;
     name: string;
     rollNumber: string;
@@ -144,5 +144,5 @@ export interface SubjectAnalytics {
     totalSessions: number;
     present: number;
     absent: number;
-  }>;
+  }[];
 }

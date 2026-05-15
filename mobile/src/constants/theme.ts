@@ -451,6 +451,7 @@ export {
   colors,
   spacing,
   radius,
+  radius as borderRadius,
   fontSize,
   fontWeights,
   lineHeight,

@@ -1,5 +1,5 @@
 /**
- * Subjects Screen - AttendX Dark Pro Theme
+ * Subjects Screen - AttendX Design System
  * Teacher: Manage subjects (CRUD)
  * Student: View enrolled subjects (read-only)
  */
@@ -20,22 +20,22 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
-import { Badge, Input } from '@/components/ui';
-import { colors, spacing, fontSize } from '@/constants/theme';
+import { Badge, Input, Loading, Button } from '@/components/ui';
+import { colors, spacing, fontSize, borderRadius } from '@/src/constants/theme';
 
 const theme = {
-  background: '#0A0D14',
-  surface: '#0F1320',
-  card: '#141828',
-  elevated: '#1A2035',
-  primary: '#4F6EF7',
-  success: '#10B981',
-  warning: '#F59E0B',
-  danger: '#EF4444',
-  textPrimary: '#F0F2FF',
-  textSecondary: '#C0C5E0',
-  border: '#1E2235',
-  borderLight: '#252B42',
+  background: colors.bg.base,
+  surface: colors.bg.surface,
+  card: colors.bg.card,
+  elevated: colors.bg.elevated,
+  primary: colors.primary.primary,
+  success: colors.success,
+  warning: colors.warning,
+  danger: colors.danger,
+  textPrimary: colors.text.primary,
+  textSecondary: colors.text.secondary,
+  border: colors.border.subtle,
+  borderLight: colors.border.default,
 };
 
 export default function SubjectsScreen() {
@@ -72,7 +72,6 @@ export default function SubjectsScreen() {
         ]);
         setSubjects(enrolledRes.subjects || []);
         setAvailableSubjects(availableRes.subjects || []);
-        // Load attendance stats for each enrolled subject
         const enrolledSubjects = enrolledRes.subjects || [];
         const statsMap: Record<string, any> = {};
         await Promise.all(
@@ -80,7 +79,7 @@ export default function SubjectsScreen() {
             try {
               const statsRes = await apiService.getMyStats(subject._id);
               statsMap[subject._id] = statsRes;
-            } catch (err) {
+            } catch {
               console.error('Error loading stats for subject:', subject._id);
             }
           })
@@ -251,12 +250,10 @@ export default function SubjectsScreen() {
   }
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading subjects...</Text>
-      </View>
-    );
+    return <Loading message="Loading subjects..." />;
   }
+
+  const accentColor = isTeacher ? theme.primary : theme.success;
 
   return (
     <View style={styles.container}>
@@ -276,7 +273,7 @@ export default function SubjectsScreen() {
             onPress={openCreateModal}
           >
             <LinearGradient
-              colors={[theme.primary, '#2D7DD2']}
+              colors={[theme.primary, '#6B5BFF']}
               style={styles.addButtonGradient}
             >
               <Text style={styles.addButtonText}>+ Add</Text>
@@ -292,7 +289,7 @@ export default function SubjectsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={isTeacher ? theme.primary : theme.success}
+            tintColor={accentColor}
           />
         }
       >
@@ -315,8 +312,8 @@ export default function SubjectsScreen() {
         {subjects.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyCard}>
-              <View style={[styles.emptyIconBg, { backgroundColor: (isTeacher ? theme.primary : theme.success) + '20' }]}>
-                <MaterialIcons name="menu-book" size={30} color={isTeacher ? theme.primary : theme.success} />
+              <View style={[styles.emptyIconBg, { backgroundColor: `${accentColor}20` }]}>
+                <MaterialIcons name="menu-book" size={30} color={accentColor} />
               </View>
               <Text style={styles.emptyTitle}>
                 {isTeacher ? 'No Subjects Yet' : 'No Enrolled Subjects'}
@@ -352,12 +349,12 @@ export default function SubjectsScreen() {
               >
                 <View style={styles.subjectCardInner}>
                   <View style={styles.subjectHeader}>
-                    <View style={[styles.subjectIconBg, { backgroundColor: (isTeacher ? theme.primary : theme.success) + '20' }]}>
-                      <MaterialIcons name="menu-book" size={20} color={isTeacher ? theme.primary : theme.success} />
+                    <View style={[styles.subjectIconBg, { backgroundColor: `${accentColor}20` }]}>
+                      <MaterialIcons name="menu-book" size={22} color={accentColor} />
                     </View>
                     <View style={styles.subjectInfo}>
                       <Text style={styles.subjectName}>{subject.name}</Text>
-                      <Text style={[styles.subjectCode, { color: isTeacher ? theme.primary : theme.success }]}>
+                      <Text style={[styles.subjectCode, { color: accentColor }]}>
                         {subject.code}
                       </Text>
                     </View>
@@ -366,7 +363,7 @@ export default function SubjectsScreen() {
                         style={styles.deleteButton}
                         onPress={() => handleDelete(subject)}
                       >
-                        <MaterialIcons name="delete-outline" size={20} color={theme.danger} />
+                        <MaterialIcons name="delete-outline" size={22} color={theme.danger} />
                       </Pressable>
                     )}
                     {!isTeacher && (
@@ -375,7 +372,7 @@ export default function SubjectsScreen() {
                         onPress={() => handleSelfUnenroll(subject)}
                         disabled={actionSubjectId === subject._id}
                       >
-                        <MaterialIcons name="logout" size={18} color={theme.danger} />
+                        <MaterialIcons name="logout" size={20} color={theme.danger} />
                       </Pressable>
                     )}
                   </View>
@@ -435,8 +432,8 @@ export default function SubjectsScreen() {
                   <View key={subject._id} style={styles.subjectCard}>
                     <View style={styles.subjectCardInner}>
                       <View style={styles.subjectHeader}>
-                        <View style={[styles.subjectIconBg, { backgroundColor: theme.success + '20' }]}>
-                          <MaterialIcons name="library-add" size={20} color={theme.success} />
+                        <View style={[styles.subjectIconBg, { backgroundColor: `${theme.success}20` }]}>
+                          <MaterialIcons name="library-add" size={22} color={theme.success} />
                         </View>
                         <View style={styles.subjectInfo}>
                           <Text style={styles.subjectName}>{subject.name}</Text>
@@ -477,7 +474,7 @@ export default function SubjectsScreen() {
         )}
       </ScrollView>
 
-      {/* Create/Edit Modal - Teacher only */}
+      {/* Create/Edit Modal */}
       {isTeacher && (
         <Modal
           visible={showModal}
@@ -505,72 +502,49 @@ export default function SubjectsScreen() {
                     {editingSubject ? 'Edit Subject' : 'Create Subject'}
                   </Text>
                   <Pressable onPress={() => setShowModal(false)}>
-                    <MaterialIcons name="close" size={22} color={theme.textSecondary} />
+                    <MaterialIcons name="close" size={24} color={theme.textSecondary} />
                   </Pressable>
                 </View>
 
                 <View style={styles.form}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Subject Name *</Text>
                   <Input
+                    label="Subject Name *"
                     value={formData.name}
                     onChangeText={(text) => setFormData({ ...formData, name: text })}
                     placeholder="e.g., Data Structures"
-                    placeholderTextColor={theme.textSecondary}
                   />
-                </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Subject Code *</Text>
                   <Input
+                    label="Subject Code *"
                     value={formData.code}
                     onChangeText={(text) => setFormData({ ...formData, code: text })}
                     placeholder="e.g., CS201"
-                    placeholderTextColor={theme.textSecondary}
                     autoCapitalize="characters"
                   />
-                </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Branch *</Text>
                   <Input
+                    label="Branch *"
                     value={formData.branch}
                     onChangeText={(text) => setFormData({ ...formData, branch: text })}
                     placeholder="e.g., Computer Science"
-                    placeholderTextColor={theme.textSecondary}
                   />
-                </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Semester *</Text>
                   <Input
+                    label="Semester *"
                     value={formData.semester}
                     onChangeText={(text) => setFormData({ ...formData, semester: text })}
                     placeholder="e.g., 3"
-                    placeholderTextColor={theme.textSecondary}
                     keyboardType="numeric"
                   />
-                </View>
 
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.submitButton,
-                    pressed && styles.buttonPressed,
-                  ]}
-                  onPress={handleSubmit}
-                  disabled={isSubmitting}
-                >
-                  <LinearGradient
-                    colors={isSubmitting ? [theme.border, theme.borderLight] : [theme.primary, '#2D7DD2']}
-                    style={styles.submitButtonGradient}
-                  >
-                    <Text style={styles.submitButtonText}>
-                      {isSubmitting ? 'Saving...' : (editingSubject ? 'Update Subject' : 'Create Subject')}
-                    </Text>
-                  </LinearGradient>
-                </Pressable>
+                  <Button
+                    title={isSubmitting ? 'Saving...' : (editingSubject ? 'Update Subject' : 'Create Subject')}
+                    onPress={handleSubmit}
+                    disabled={isSubmitting}
+                    loading={isSubmitting}
+                  />
+                </View>
               </View>
-            </View>
             </ScrollView>
           </KeyboardAvoidingView>
         </Modal>
@@ -584,22 +558,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.background,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: theme.background,
-  },
-  loadingText: {
-    color: theme.textSecondary,
-    fontSize: fontSize.md,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
   },
   title: {
     fontSize: fontSize.xxl,
@@ -627,21 +592,20 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     alignItems: 'center',
-    padding: spacing.xl,
+    padding: spacing.xxl,
     backgroundColor: theme.card,
-    borderRadius: 20,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: theme.border,
   },
   emptyIconBg: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
-  emptyIcon: {},
   emptyTitle: {
     fontSize: fontSize.xl,
     fontWeight: '700',
@@ -652,21 +616,22 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: theme.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
+    lineHeight: 22,
   },
   createFirstButton: {
     backgroundColor: theme.primary,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    borderRadius: 14,
+    borderRadius: borderRadius.md,
   },
   createFirstButtonText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontWeight: '700',
     fontSize: fontSize.md,
   },
   addButton: {
-    borderRadius: 14,
+    borderRadius: borderRadius.md,
     overflow: 'hidden',
   },
   addButtonPressed: {
@@ -678,21 +643,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   addButtonText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontWeight: '700',
     fontSize: fontSize.sm,
   },
   subjectList: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   studentSummary: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.card,
-    borderRadius: 14,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: theme.border,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
     padding: spacing.md,
   },
   summaryItem: {
@@ -716,7 +681,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.borderLight,
   },
   availableSection: {
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
   },
   sectionTitle: {
     fontSize: fontSize.lg,
@@ -726,10 +691,10 @@ const styles = StyleSheet.create({
   },
   availableEmpty: {
     backgroundColor: theme.card,
-    borderRadius: 14,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: theme.border,
-    padding: spacing.lg,
+    padding: spacing.xl,
   },
   availableEmptyText: {
     color: theme.textSecondary,
@@ -737,16 +702,15 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
   },
   subjectCard: {
-    marginBottom: spacing.sm,
-    borderRadius: 14,
-    overflow: 'hidden',
     backgroundColor: theme.card,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: theme.border,
+    overflow: 'hidden',
   },
   subjectCardPressed: {
     transform: [{ scale: 0.98 }],
-    opacity: 0.8,
+    opacity: 0.85,
   },
   subjectCardInner: {
     padding: spacing.md,
@@ -756,14 +720,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   subjectIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
   },
-  subjectIcon: {},
   subjectInfo: {
     flex: 1,
   },
@@ -783,14 +746,13 @@ const styles = StyleSheet.create({
   leaveButton: {
     padding: spacing.sm,
   },
-  deleteButtonText: {},
   enrollButton: {
-    backgroundColor: theme.success + '20',
+    backgroundColor: `${theme.success}20`,
     borderWidth: 1,
-    borderColor: theme.success + '40',
+    borderColor: `${theme.success}40`,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 10,
+    borderRadius: borderRadius.sm,
   },
   enrollButtonText: {
     color: theme.success,
@@ -823,10 +785,10 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: theme.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.xl,
+    paddingBottom: spacing.xxxl,
   },
   modalScrollContent: {
     flexGrow: 1,
@@ -836,38 +798,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   modalTitle: {
     fontSize: fontSize.xl,
     fontWeight: '800',
     color: theme.textPrimary,
   },
-  modalClose: {},
   form: {
     gap: spacing.md,
-  },
-  inputGroup: {
-    gap: spacing.xs,
-  },
-  inputLabel: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: theme.textSecondary,
-  },
-  submitButton: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginTop: spacing.md,
-  },
-  submitButtonGradient: {
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  submitButtonText: {
-    color: colors.white,
-    fontWeight: '700',
-    fontSize: fontSize.md,
   },
   buttonPressed: {
     transform: [{ scale: 0.97 }],

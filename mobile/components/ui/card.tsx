@@ -1,26 +1,53 @@
 /**
- * Reusable Card Component
+ * Reusable Card Component - AttendX Design System
+ * Consistent theming with proper shadows and borders
  */
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { borderRadius, shadows, spacing } from '../../constants/theme';
+import { spacing, borderRadius, shadows, colors } from '../../src/constants/theme';
 
 interface CardProps {
   children: React.ReactNode;
   style?: ViewStyle;
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  variant?: 'default' | 'elevated';
 }
 
-export function Card({ children, style, padding = 'md' }: CardProps) {
-  const paddingStyle = {
+export function Card({
+  children,
+  style,
+  padding = 'md',
+  variant = 'default',
+}: CardProps) {
+  const paddingStyles = {
     none: {},
     sm: { padding: spacing.sm },
-    md: { padding: 16 },
-    lg: { padding: spacing.lg },
+    md: { padding: spacing.lg },
+    lg: { padding: spacing.xl },
+  };
+
+  const variantStyles = {
+    default: {
+      backgroundColor: colors.bg.card,
+      borderColor: colors.border.subtle,
+      ...shadows.sm,
+    },
+    elevated: {
+      backgroundColor: colors.bg.elevated,
+      borderColor: colors.border.default,
+      ...shadows.md,
+    },
   };
 
   return (
-    <View style={[styles.card, paddingStyle[padding], style]}>
+    <View
+      style={[
+        styles.card,
+        variantStyles[variant],
+        paddingStyles[padding],
+        style,
+      ]}
+    >
       {children}
     </View>
   );
@@ -28,15 +55,9 @@ export function Card({ children, style, padding = 'md' }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#141828',
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: '#252B42',
-    ...shadows.sm,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 4,
   },
 });
+
+export default Card;

@@ -1,9 +1,10 @@
 /**
- * Reusable Empty State Component
+ * Reusable Empty State Component - AttendX Design System
+ * Consistent theming for empty list states
  */
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { spacing, fontSize } from '../../constants/theme';
+import { spacing, fontSize, colors, borderRadius } from '../../src/constants/theme';
 import { Button } from './button';
 
 interface EmptyStateProps {
@@ -25,21 +26,22 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <View style={[styles.container, style]}>
-      {icon && (
-        <View style={styles.iconContainer}>
-          {typeof icon === 'string' ? <Text style={styles.iconText}>{icon}</Text> : icon}
-        </View>
-      )}
-      {!icon && (
-        <View style={styles.illustrationPlaceholder}>
-          <View style={styles.illustrationInner}>
-            <View style={styles.illustrationCircle} />
-            <View style={styles.illustrationCircleSmall} />
+      {icon ? (
+        <View style={styles.iconContainer}>{icon}</View>
+      ) : (
+        <View style={styles.illustrationWrapper}>
+          <View style={styles.illustrationOuter}>
+            <View style={styles.illustrationInner}>
+              <View style={styles.illustrationDot} />
+              <View style={styles.illustrationDotSmall} />
+            </View>
           </View>
         </View>
       )}
+
       <Text style={styles.title}>{title}</Text>
       {message && <Text style={styles.message}>{message}</Text>}
+
       {actionLabel && onAction && (
         <Button
           title={actionLabel}
@@ -57,45 +59,43 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xxl,
+    padding: spacing.xxxl,
   },
   iconContainer: {
     marginBottom: spacing.lg,
   },
-  iconText: {
-    fontSize: 28,
-    color: '#7B93FC',
+  illustrationWrapper: {
+    marginBottom: spacing.lg,
   },
-  illustrationPlaceholder: {
-    width: 72,
-    height: 72,
-    borderRadius: 999,
-    backgroundColor: '#162347',
+  illustrationOuter: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.full,
+    backgroundColor: 'rgba(79, 110, 247, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: '#30478E',
+    borderColor: 'rgba(79, 110, 247, 0.2)',
   },
   illustrationInner: {
-    width: 42,
-    height: 42,
-    borderRadius: 999,
-    backgroundColor: '#4F6EF7',
+    width: 50,
+    height: 50,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primary.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  illustrationCircle: {
-    width: 16,
-    height: 16,
-    borderRadius: 999,
+  illustrationDot: {
+    width: 18,
+    height: 18,
+    borderRadius: borderRadius.full,
     backgroundColor: '#FFFFFF',
-    opacity: 0.9,
+    opacity: 0.95,
   },
-  illustrationCircleSmall: {
+  illustrationDotSmall: {
     width: 8,
     height: 8,
-    borderRadius: 999,
+    borderRadius: borderRadius.full,
     backgroundColor: '#FFFFFF',
     opacity: 0.8,
     position: 'absolute',
@@ -105,18 +105,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.lg,
     fontWeight: '700',
-    color: '#F0F2FF',
+    color: colors.text.primary,
     textAlign: 'center',
     marginBottom: spacing.xs,
+    letterSpacing: -0.2,
   },
   message: {
     fontSize: fontSize.md,
-    color: '#C0C5E0',
+    color: colors.text.secondary,
     textAlign: 'center',
     maxWidth: 280,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   button: {
     marginTop: spacing.lg,
   },
 });
+
+export default EmptyState;

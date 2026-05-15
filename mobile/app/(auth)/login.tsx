@@ -1,3 +1,7 @@
+/**
+ * Login Screen - AttendX Design System
+ * Clean authentication flow with consistent theming
+ */
 import { useState } from 'react';
 import {
   View,
@@ -13,16 +17,16 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import { Button, Input } from '@/components/ui';
-import { spacing, fontSize, borderRadius } from '@/constants/theme';
+import { spacing, fontSize, borderRadius, colors } from '@/src/constants/theme';
 
 const theme = {
-  bg: '#090F1E',
-  card: '#11192E',
-  border: '#243153',
-  textPrimary: '#F1F5FF',
-  textSecondary: '#B6C2E3',
-  textMuted: '#6E7DA8',
-  danger: '#FF7C85',
+  bg: colors.bg.base,
+  card: colors.bg.card,
+  border: colors.border.subtle,
+  textPrimary: colors.text.primary,
+  textSecondary: colors.text.secondary,
+  textMuted: colors.text.muted,
+  danger: colors.danger,
 };
 
 export default function LoginScreen() {
@@ -37,7 +41,7 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await login(email.trim(), password);
-    } catch (err) {
+    } catch {
       // Error is handled in context and shown in UI
     } finally {
       setIsLoading(false);
@@ -53,14 +57,13 @@ export default function LoginScreen() {
       style={styles.container}
     >
       <LinearGradient
-        colors={['#0E1731', '#090F1E']}
+        colors={[colors.bg.surface, colors.bg.base]}
         style={styles.backgroundGradient}
       />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 10}
       >
         <View style={styles.brandWrap}>
           <View style={styles.brandIcon}>
@@ -70,8 +73,8 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.header}>
-          <Text style={styles.title}>Sign In</Text>
-          <Text style={styles.subtitle}>Continue to your attendance workspace</Text>
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.subtitle}>Sign in to your attendance workspace</Text>
         </View>
 
         <View style={styles.card}>
@@ -94,7 +97,7 @@ export default function LoginScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             editable={!isLoading}
-            leftIcon={<MaterialIcons name="alternate-email" size={18} color="#7B93FC" />}
+            leftIcon={<MaterialIcons name="alternate-email" size={20} color={colors.primary.primaryLight} />}
           />
 
           <Input
@@ -105,12 +108,12 @@ export default function LoginScreen() {
             secureTextEntry={!showPassword}
             autoCapitalize="none"
             editable={!isLoading}
-            leftIcon={<MaterialIcons name="lock-outline" size={18} color="#7B93FC" />}
+            leftIcon={<MaterialIcons name="lock-outline" size={20} color={colors.primary.primaryLight} />}
             rightIcon={
               <MaterialIcons
                 name={showPassword ? 'visibility-off' : 'visibility'}
                 size={20}
-                color="#9FB0DB"
+                color={colors.text.secondary}
               />
             }
             onRightIconPress={() => setShowPassword((prev) => !prev)}
@@ -154,64 +157,66 @@ const styles = StyleSheet.create({
   },
   brandWrap: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
   },
   brandIcon: {
-    width: 62,
-    height: 62,
+    width: 64,
+    height: 64,
     borderRadius: 20,
-    backgroundColor: '#4F6EF7',
+    backgroundColor: colors.primary.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: '#7B93FC',
+    borderColor: 'rgba(79, 110, 247, 0.4)',
   },
   brandText: {
     color: theme.textPrimary,
     fontSize: fontSize.lg,
     fontWeight: '700',
+    letterSpacing: 0.5,
   },
   header: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
     alignItems: 'center',
   },
   title: {
     color: theme.textPrimary,
     fontSize: fontSize.xxxl,
     fontWeight: '800',
+    letterSpacing: -0.5,
   },
   subtitle: {
     color: theme.textSecondary,
     fontSize: fontSize.md,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   card: {
     backgroundColor: theme.card,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: theme.border,
-    padding: spacing.lg,
+    padding: spacing.xl,
   },
   errorWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: '#331D28',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderWidth: 1,
-    borderColor: '#5F2A39',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
     borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   errorText: {
     flex: 1,
-    color: '#FFB2BB',
+    color: colors.danger,
     fontSize: fontSize.sm,
   },
   errorDismiss: {
-    color: '#FFCDD2',
+    color: 'rgba(239, 68, 68, 0.8)',
     fontWeight: '700',
     fontSize: fontSize.xs,
   },
@@ -219,7 +224,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   footer: {
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
@@ -230,7 +235,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
   },
   footerLink: {
-    color: '#7B93FC',
+    color: colors.primary.primaryLight,
     fontSize: fontSize.sm,
     fontWeight: '700',
   },

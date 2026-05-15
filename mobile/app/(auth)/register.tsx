@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react';
-import { useRef } from 'react';
+/**
+ * Register Screen - AttendX Design System
+ * Account creation with consistent theming
+ */
+import { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -14,15 +17,15 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import { Button, Input } from '@/components/ui';
-import { spacing, fontSize, borderRadius } from '@/constants/theme';
+import { spacing, fontSize, borderRadius, colors } from '@/src/constants/theme';
 
 const theme = {
-  bg: '#090F1E',
-  card: '#11192E',
-  border: '#243153',
-  textPrimary: '#F1F5FF',
-  textSecondary: '#B6C2E3',
-  danger: '#FF7C85',
+  bg: colors.bg.base,
+  card: colors.bg.card,
+  border: colors.border.subtle,
+  textPrimary: colors.text.primary,
+  textSecondary: colors.text.secondary,
+  danger: colors.danger,
 };
 
 export default function RegisterScreen() {
@@ -89,14 +92,13 @@ export default function RegisterScreen() {
       style={styles.container}
     >
       <LinearGradient
-        colors={['#0E1731', '#090F1E']}
+        colors={[colors.bg.surface, colors.bg.base]}
         style={styles.backgroundGradient}
       />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 10}
       >
         <View style={styles.header}>
           <View style={styles.brandIcon}>
@@ -123,7 +125,7 @@ export default function RegisterScreen() {
             value={formData.name}
             onChangeText={(value) => updateField('name', value)}
             editable={!isLoading}
-            leftIcon={<MaterialIcons name="person-outline" size={18} color="#7B93FC" />}
+            leftIcon={<MaterialIcons name="person-outline" size={20} color={colors.primary.primaryLight} />}
           />
 
           <Input
@@ -135,7 +137,7 @@ export default function RegisterScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             editable={!isLoading}
-            leftIcon={<MaterialIcons name="alternate-email" size={18} color="#7B93FC" />}
+            leftIcon={<MaterialIcons name="alternate-email" size={20} color={colors.primary.primaryLight} />}
           />
 
           <Input
@@ -147,12 +149,12 @@ export default function RegisterScreen() {
             autoCapitalize="none"
             editable={!isLoading}
             error={passwordError || undefined}
-            leftIcon={<MaterialIcons name="lock-outline" size={18} color="#7B93FC" />}
+            leftIcon={<MaterialIcons name="lock-outline" size={20} color={colors.primary.primaryLight} />}
             rightIcon={
               <MaterialIcons
                 name={showPassword ? 'visibility-off' : 'visibility'}
                 size={20}
-                color="#9FB0DB"
+                color={colors.text.secondary}
               />
             }
             onRightIconPress={() => setShowPassword((prev) => !prev)}
@@ -167,12 +169,12 @@ export default function RegisterScreen() {
             autoCapitalize="none"
             editable={!isLoading}
             error={confirmPasswordError || undefined}
-            leftIcon={<MaterialIcons name="lock-outline" size={18} color="#7B93FC" />}
+            leftIcon={<MaterialIcons name="lock-outline" size={20} color={colors.primary.primaryLight} />}
             rightIcon={
               <MaterialIcons
                 name={showConfirmPassword ? 'visibility-off' : 'visibility'}
                 size={20}
-                color="#9FB0DB"
+                color={colors.text.secondary}
               />
             }
             onRightIconPress={() => setShowConfirmPassword((prev) => !prev)}
@@ -216,55 +218,56 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   brandIcon: {
-    width: 58,
-    height: 58,
+    width: 60,
+    height: 60,
     borderRadius: 18,
-    backgroundColor: '#4F6EF7',
+    backgroundColor: colors.primary.primary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#7B93FC',
+    borderColor: 'rgba(79, 110, 247, 0.4)',
     marginBottom: spacing.sm,
   },
   title: {
     color: theme.textPrimary,
     fontSize: fontSize.xxxl,
     fontWeight: '800',
+    letterSpacing: -0.5,
   },
   subtitle: {
     color: theme.textSecondary,
     fontSize: fontSize.md,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   card: {
     backgroundColor: theme.card,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: theme.border,
-    padding: spacing.lg,
+    padding: spacing.xl,
   },
   errorWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: '#331D28',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderWidth: 1,
-    borderColor: '#5F2A39',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
     borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   errorText: {
     flex: 1,
-    color: '#FFB2BB',
+    color: colors.danger,
     fontSize: fontSize.sm,
   },
   errorDismiss: {
-    color: '#FFCDD2',
+    color: 'rgba(239, 68, 68, 0.8)',
     fontWeight: '700',
     fontSize: fontSize.xs,
   },
@@ -272,7 +275,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   footer: {
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
@@ -283,7 +286,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
   },
   footerLink: {
-    color: '#7B93FC',
+    color: colors.primary.primaryLight,
     fontSize: fontSize.sm,
     fontWeight: '700',
   },

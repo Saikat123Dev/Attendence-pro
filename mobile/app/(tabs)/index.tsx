@@ -1,5 +1,5 @@
 /**
- * Home Screen - AttendX Dark Pro Theme
+ * Home Screen - AttendX Design System
  * Role-Based Dashboard with Teacher (Blue) and Student (Green) themes
  */
 import { useState, useEffect, useCallback } from 'react';
@@ -17,28 +17,25 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
-import { Card, Badge, Avatar, Loading, EmptyState } from '@/components/ui';
-import { SessionCard } from '@/components/attendance/session-card';
-import { colors, spacing, fontSize } from '@/constants/theme';
-import { StudentProfile, TeacherProfile, Subject } from '@/types';
+import { Badge, Avatar, Loading } from '@/components/ui';
+import { colors, spacing, fontSize, borderRadius } from '@/src/constants/theme';
+import { StudentProfile, TeacherProfile } from '@/types';
 
-// AttendX Dark Pro Theme Colors
 const theme = {
-  background: '#0A0D14',
-  surface: '#0F1320',
-  card: '#141828',
-  elevated: '#1A2035',
-  primary: '#4F6EF7',
-  success: '#10B981',
-  warning: '#F59E0B',
-  danger: '#EF4444',
-  textPrimary: '#F0F2FF',
-  textSecondary: '#C0C5E0',
-  border: '#1E2235',
-  borderLight: '#252B42',
+  background: colors.bg.base,
+  surface: colors.bg.surface,
+  card: colors.bg.card,
+  elevated: colors.bg.elevated,
+  primary: colors.primary.primary,
+  success: colors.success,
+  warning: colors.warning,
+  danger: colors.danger,
+  textPrimary: colors.text.primary,
+  textSecondary: colors.text.secondary,
+  border: colors.border.subtle,
+  borderLight: colors.border.default,
 };
 
-// Get time-based greeting
 function getGreeting(): string {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good Morning';
@@ -58,11 +55,10 @@ export default function HomeScreen() {
     ? (user?.profile as TeacherProfile)
     : (user?.profile as StudentProfile);
 
-  // Role-based accent colors
   const accentColor = isTeacher ? theme.primary : theme.success;
   const accentGradient = isTeacher
-    ? ['#4F6EF7', '#2D7DD2']
-    : ['#10B981', '#059669'];
+    ? [colors.primary.primary, '#6B5BFF']
+    : [colors.success, '#059669'];
 
   const loadData = useCallback(async () => {
     try {
@@ -95,22 +91,17 @@ export default function HomeScreen() {
     return <Loading message="Loading dashboard..." />;
   }
 
-  // Teacher Dashboard
   if (isTeacher) {
     return (
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={accentColor}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accentColor} />
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Header with Gradient */}
+        {/* Hero Header */}
         <LinearGradient
           colors={accentGradient as [string, string]}
           start={{ x: 0, y: 0 }}
@@ -127,7 +118,7 @@ export default function HomeScreen() {
             </View>
             <TouchableOpacity activeOpacity={0.8}>
               <View style={styles.avatarWrapper}>
-                <Avatar name={profile?.name || user?.email || 'T'} size="lg" />
+                <Avatar name={profile?.name || user?.email || 'T'} size="lg" type="teacher" />
                 <View style={[styles.statusIndicator, { backgroundColor: theme.success }]} />
               </View>
             </TouchableOpacity>
@@ -135,7 +126,7 @@ export default function HomeScreen() {
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatNumber}>{activeSessions.length}</Text>
-              <Text style={styles.heroStatLabel}>Active Sessions</Text>
+              <Text style={styles.heroStatLabel}>Active</Text>
             </View>
             <View style={styles.heroStatDivider} />
             <View style={styles.heroStat}>
@@ -161,8 +152,8 @@ export default function HomeScreen() {
                 end={{ x: 1, y: 1 }}
                 style={[styles.statCard, { borderColor: theme.border }]}
               >
-                <View style={[styles.statIconBg, { backgroundColor: theme.primary + '20' }]}>
-                  <MaterialIcons name="bar-chart" size={18} color={theme.primary} />
+                <View style={[styles.statIconBg, { backgroundColor: colors.primary.primaryGlow }]}>
+                  <MaterialIcons name="bar-chart" size={20} color={theme.primary} />
                 </View>
                 <Text style={styles.statNumber}>{overview?.totalSessions || 0}</Text>
                 <Text style={styles.statLabel}>Total Sessions</Text>
@@ -176,8 +167,8 @@ export default function HomeScreen() {
                 end={{ x: 1, y: 1 }}
                 style={[styles.statCard, { borderColor: theme.border }]}
               >
-                <View style={[styles.statIconBg, { backgroundColor: theme.success + '20' }]}>
-                  <MaterialIcons name="today" size={18} color={theme.success} />
+                <View style={[styles.statIconBg, { backgroundColor: colors.successMuted }]}>
+                  <MaterialIcons name="today" size={20} color={theme.success} />
                 </View>
                 <Text style={[styles.statNumber, { color: theme.success }]}>
                   {overview?.todaySessions || 0}
@@ -193,8 +184,8 @@ export default function HomeScreen() {
                 end={{ x: 1, y: 1 }}
                 style={[styles.statCard, { borderColor: theme.border }]}
               >
-                <View style={[styles.statIconBg, { backgroundColor: '#9333EA' + '20' }]}>
-                  <MaterialIcons name="groups" size={18} color="#A855F7" />
+                <View style={[styles.statIconBg, { backgroundColor: 'rgba(138, 43, 226, 0.15)' }]}>
+                  <MaterialIcons name="groups" size={20} color="#A855F7" />
                 </View>
                 <Text style={[styles.statNumber, { color: '#A855F7' }]}>
                   {overview?.totalStudents || 0}
@@ -210,112 +201,90 @@ export default function HomeScreen() {
                 end={{ x: 1, y: 1 }}
                 style={[styles.statCard, { borderColor: theme.border }]}
               >
-                <View style={[styles.statIconBg, { backgroundColor: theme.warning + '20' }]}>
-                  <MaterialIcons name="check-circle" size={18} color={theme.warning} />
+                <View style={[styles.statIconBg, { backgroundColor: colors.infoMuted }]}>
+                  <MaterialIcons name="check-circle" size={20} color={colors.info} />
                 </View>
-                <Text style={[styles.statNumber, { color: theme.warning }]}>
+                <Text style={[styles.statNumber, { color: colors.info }]}>
                   {overview?.todayAttendanceMarked || 0}
                 </Text>
-                <Text style={styles.statLabel}>Marked</Text>
+                <Text style={styles.statLabel}>Marked Today</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Active Sessions */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Active Sessions</Text>
-            <Pressable onPress={() => router.push('/(tabs)/scan')}>
-              <Text style={styles.seeAll}>See All →</Text>
-            </Pressable>
-          </View>
-
-          {activeSessions.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <EmptyState
-                title="No active sessions"
-                message="Start a new attendance session from the Scan tab"
-                icon={<MaterialIcons name="inbox" size={28} color={theme.textSecondary} />}
-              />
-            </Card>
-          ) : (
-            activeSessions.map((session) => (
-              <SessionCard
-                key={session._id}
-                subjectName={(session.subjectId as any)?.name || 'Unknown'}
-                subjectCode={(session.subjectId as any)?.code}
-                status={session.status}
-                date={new Date(session.startedAt).toLocaleTimeString()}
+        {/* Active Sessions Alert */}
+        {activeSessions.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.alertBanner}>
+              <View style={styles.alertDot} />
+              <Text style={styles.alertText}>
+                {activeSessions.length} Active Session{activeSessions.length > 1 ? 's' : ''}
+              </Text>
+              <TouchableOpacity
+                style={styles.alertAction}
                 onPress={() => router.push('/(tabs)/scan')}
-              />
-            ))
-          )}
-        </View>
+              >
+                <Text style={styles.alertActionText}>View QR</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsGrid}>
             <Pressable
-              style={({ pressed }) => [
-                styles.actionCard,
-                pressed && styles.actionCardPressed,
-              ]}
+              style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
               onPress={() => router.push('/(tabs)/scan')}
             >
               <LinearGradient
-                colors={[theme.primary + '20', theme.primary + '10']}
-                style={styles.actionIcon}
+                colors={[colors.primary.primary, '#6B5BFF']}
+                style={styles.actionIconBg}
               >
-                <MaterialIcons name="play-arrow" size={20} color={theme.primary} />
+                <MaterialIcons name="qr-code-2" size={24} color="#FFFFFF" />
               </LinearGradient>
-              <Text style={styles.actionLabel}>Start Session</Text>
+              <Text style={styles.actionText}>Start Session</Text>
             </Pressable>
+
             <Pressable
-              style={({ pressed }) => [
-                styles.actionCard,
-                pressed && styles.actionCardPressed,
-              ]}
-              onPress={() => router.push('/(tabs)/attendance')}
-            >
-              <LinearGradient
-                colors={[theme.success + '20', theme.success + '10']}
-                style={styles.actionIcon}
-              >
-                <MaterialIcons name="insights" size={20} color={theme.success} />
-              </LinearGradient>
-              <Text style={styles.actionLabel}>Analytics</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.actionCard,
-                pressed && styles.actionCardPressed,
-              ]}
+              style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
               onPress={() => router.push('/(tabs)/subjects')}
             >
               <LinearGradient
-                colors={[theme.warning + '20', theme.warning + '10']}
-                style={styles.actionIcon}
+                colors={[colors.success, '#059669']}
+                style={styles.actionIconBg}
               >
-                <MaterialIcons name="tune" size={20} color={theme.warning} />
+                <MaterialIcons name="menu-book" size={24} color="#FFFFFF" />
               </LinearGradient>
-              <Text style={styles.actionLabel}>Manage</Text>
+              <Text style={styles.actionText}>Subjects</Text>
             </Pressable>
+
             <Pressable
-              style={({ pressed }) => [
-                styles.actionCard,
-                pressed && styles.actionCardPressed,
-              ]}
+              style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
+              onPress={() => router.push('/(tabs)/attendance')}
+            >
+              <LinearGradient
+                colors={[colors.warning, '#D97706']}
+                style={styles.actionIconBg}
+              >
+                <MaterialIcons name="list-alt" size={24} color="#FFFFFF" />
+              </LinearGradient>
+              <Text style={styles.actionText}>Sessions</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
               onPress={() => router.push('/(tabs)/students')}
             >
               <LinearGradient
-                colors={['#9333EA20', '#9333EA10']}
-                style={styles.actionIcon}
+                colors={['#8B5CF6', '#7C3AED']}
+                style={styles.actionIconBg}
               >
-                <MaterialIcons name="groups-2" size={20} color="#A855F7" />
+                <MaterialIcons name="people" size={24} color="#FFFFFF" />
               </LinearGradient>
-              <Text style={styles.actionLabel}>Students</Text>
+              <Text style={styles.actionText}>Students</Text>
             </Pressable>
           </View>
         </View>
@@ -329,15 +298,11 @@ export default function HomeScreen() {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={accentColor}
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accentColor} />
       }
       showsVerticalScrollIndicator={false}
     >
-      {/* Hero Header with Green Gradient */}
+      {/* Hero Header */}
       <LinearGradient
         colors={accentGradient as [string, string]}
         start={{ x: 0, y: 0 }}
@@ -354,15 +319,21 @@ export default function HomeScreen() {
           </View>
           <TouchableOpacity activeOpacity={0.8}>
             <View style={styles.avatarWrapper}>
-              <Avatar name={profile?.name || user?.email || 'S'} size="lg" />
+              <Avatar name={profile?.name || user?.email || 'S'} size="lg" type="student" />
               <View style={[styles.statusIndicator, { backgroundColor: theme.success }]} />
             </View>
           </TouchableOpacity>
         </View>
-        <View style={styles.heroSubtext}>
-          <Text style={styles.heroSubtextText}>
-            {(profile as StudentProfile)?.branch || 'University'} • Semester {(profile as StudentProfile)?.semester || 'N/A'}
-          </Text>
+        <View style={styles.heroStatsRow}>
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatNumber}>{(profile as TeacherProfile)?.employeeId || 'N/A'}</Text>
+            <Text style={styles.heroStatLabel}>Employee ID</Text>
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatNumber}>{(profile as TeacherProfile)?.department || 'N/A'}</Text>
+            <Text style={styles.heroStatLabel}>Department</Text>
+          </View>
         </View>
       </LinearGradient>
 
@@ -371,117 +342,58 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           <Pressable
-            style={({ pressed }) => [
-              styles.actionCard,
-              pressed && styles.actionCardPressed,
-            ]}
+            style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
             onPress={() => router.push('/(tabs)/scan')}
           >
             <LinearGradient
-              colors={[theme.primary + '20', theme.primary + '10']}
-              style={styles.actionIcon}
+              colors={[colors.success, '#059669']}
+              style={styles.actionIconBg}
             >
-              <MaterialIcons name="qr-code-scanner" size={20} color={theme.primary} />
+              <MaterialIcons name="qr-code-scanner" size={24} color="#FFFFFF" />
             </LinearGradient>
-            <Text style={styles.actionLabel}>Scan QR</Text>
+            <Text style={styles.actionText}>Scan QR</Text>
           </Pressable>
+
           <Pressable
-            style={({ pressed }) => [
-              styles.actionCard,
-              pressed && styles.actionCardPressed,
-            ]}
-            onPress={() => router.push('/(tabs)/attendance')}
-          >
-            <LinearGradient
-              colors={[theme.success + '20', theme.success + '10']}
-              style={styles.actionIcon}
-            >
-              <MaterialIcons name="fact-check" size={20} color={theme.success} />
-            </LinearGradient>
-            <Text style={styles.actionLabel}>Attendance</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [
-              styles.actionCard,
-              pressed && styles.actionCardPressed,
-            ]}
+            style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
             onPress={() => router.push('/(tabs)/subjects')}
           >
             <LinearGradient
-              colors={[theme.warning + '20', theme.warning + '10']}
-              style={styles.actionIcon}
+              colors={[colors.primary.primary, '#6B5BFF']}
+              style={styles.actionIconBg}
             >
-              <MaterialIcons name="menu-book" size={20} color={theme.warning} />
+              <MaterialIcons name="menu-book" size={24} color="#FFFFFF" />
             </LinearGradient>
-            <Text style={styles.actionLabel}>Subjects</Text>
+            <Text style={styles.actionText}>Subjects</Text>
           </Pressable>
+
           <Pressable
-            style={({ pressed }) => [
-              styles.actionCard,
-              pressed && styles.actionCardPressed,
-            ]}
+            style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
             onPress={() => router.push('/(tabs)/attendance')}
           >
             <LinearGradient
-              colors={['#9333EA20', '#9333EA10']}
-              style={styles.actionIcon}
+              colors={[colors.warning, '#D97706']}
+              style={styles.actionIconBg}
             >
-              <MaterialIcons name="analytics" size={20} color="#A855F7" />
+              <MaterialIcons name="assignment" size={24} color="#FFFFFF" />
             </LinearGradient>
-            <Text style={styles.actionLabel}>Reports</Text>
+            <Text style={styles.actionText}>Attendance</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.actionCard, pressed && styles.actionCardPressed]}
+            onPress={() => router.push('/(tabs)/profile')}
+          >
+            <LinearGradient
+              colors={['#8B5CF6', '#7C3AED']}
+              style={styles.actionIconBg}
+            >
+              <MaterialIcons name="person" size={24} color="#FFFFFF" />
+            </LinearGradient>
+            <Text style={styles.actionText}>Profile</Text>
           </Pressable>
         </View>
       </View>
-
-      {/* Student Info Card */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Your Details</Text>
-        <Card style={styles.infoCard}>
-          <View style={styles.infoRow}>
-            <View style={styles.infoLabelContainer}>
-              <Text style={styles.infoLabel}>Roll Number</Text>
-            </View>
-            <Text style={styles.infoValue}>{(profile as StudentProfile)?.rollNumber || 'N/A'}</Text>
-          </View>
-          <View style={[styles.infoRow, styles.infoRowBorder]}>
-            <View style={styles.infoLabelContainer}>
-              <Text style={styles.infoLabel}>Branch</Text>
-            </View>
-            <Text style={styles.infoValue}>{(profile as StudentProfile)?.branch || 'N/A'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <View style={styles.infoLabelContainer}>
-              <Text style={styles.infoLabel}>Semester</Text>
-            </View>
-            <Text style={styles.infoValue}>{(profile as StudentProfile)?.semester || 'N/A'}</Text>
-          </View>
-        </Card>
-      </View>
-
-      {/* Enrolled Subjects */}
-      {(profile as StudentProfile)?.subjects && (profile as StudentProfile)?.subjects?.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Enrolled Subjects</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.subjectsScroll}
-          >
-            {(profile as StudentProfile)?.subjects?.map((subject: Subject) => (
-              <LinearGradient
-                key={subject._id}
-                colors={[theme.card, theme.elevated]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.subjectCard}
-              >
-                <Text style={styles.subjectCode}>{subject.code}</Text>
-                <Text style={styles.subjectName} numberOfLines={2}>{subject.name}</Text>
-              </LinearGradient>
-            ))}
-          </ScrollView>
-        </View>
-      )}
     </ScrollView>
   );
 }
@@ -492,13 +404,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.background,
   },
   contentContainer: {
-    padding: spacing.md,
-    paddingBottom: 120,
+    paddingBottom: spacing.xxxl,
   },
   heroHeader: {
-    borderRadius: 20,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
   },
   heroContent: {
     flexDirection: 'row',
@@ -508,8 +421,21 @@ const styles = StyleSheet.create({
   heroLeft: {
     flex: 1,
   },
-  heroRight: {
-    alignItems: 'flex-end',
+  greeting: {
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '500',
+    marginBottom: spacing.xs,
+  },
+  heroName: {
+    fontSize: fontSize.xxl,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+    marginBottom: spacing.sm,
+  },
+  heroBadge: {
+    alignSelf: 'flex-start',
   },
   avatarWrapper: {
     position: 'relative',
@@ -522,206 +448,142 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: theme.primary,
-  },
-  greeting: {
-    fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.75)',
-    marginBottom: 2,
-  },
-  heroName: {
-    fontSize: fontSize.xxl,
-    fontWeight: '800',
-    color: colors.white,
-    letterSpacing: -0.5,
-  },
-  heroBadge: {
-    marginTop: spacing.sm,
-  },
-  heroSubtext: {
-    marginTop: spacing.md,
-  },
-  heroSubtextText: {
-    fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.7)',
+    borderColor: theme.background,
   },
   heroStatsRow: {
     flexDirection: 'row',
-    marginTop: spacing.lg,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 14,
-    padding: spacing.md,
+    justifyContent: 'flex-start',
+    marginTop: spacing.xl,
+    gap: spacing.xl,
   },
   heroStat: {
-    flex: 1,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   heroStatNumber: {
-    fontSize: fontSize.xl,
+    fontSize: fontSize.xxl,
     fontWeight: '800',
-    color: colors.white,
+    color: '#FFFFFF',
   },
   heroStatLabel: {
     fontSize: fontSize.xs,
     color: 'rgba(255,255,255,0.7)',
+    fontWeight: '500',
     marginTop: 2,
   },
   heroStatDivider: {
     width: 1,
+    height: 32,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    marginHorizontal: spacing.sm,
+    alignSelf: 'center',
   },
   section: {
-    marginBottom: spacing.lg,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.xl,
   },
   sectionTitle: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
     fontWeight: '700',
-    color: theme.textPrimary,
-    letterSpacing: -0.3,
-  },
-  seeAll: {
-    fontSize: fontSize.sm,
-    color: theme.primary,
-    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacing.md,
+    letterSpacing: 0.2,
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   statCardWrapper: {
-    width: '48%',
+    width: '47%',
   },
   statCard: {
-    borderRadius: 14,
-    padding: spacing.md,
-    alignItems: 'center',
+    backgroundColor: theme.card,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
+    padding: spacing.md,
+    minHeight: 100,
   },
   statIconBg: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: borderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
   },
-  statIcon: {
-    fontSize: 18,
-  },
   statNumber: {
-    fontSize: fontSize.xxxl,
+    fontSize: fontSize.xxl,
     fontWeight: '800',
-    color: theme.textPrimary,
-    letterSpacing: -1,
+    color: theme.primary,
+    marginBottom: 2,
   },
   statLabel: {
+    fontSize: fontSize.xs,
+    color: colors.text.secondary,
+    fontWeight: '500',
+  },
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  alertDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.success,
+  },
+  alertText: {
+    flex: 1,
     fontSize: fontSize.sm,
-    color: theme.textSecondary,
-    marginTop: spacing.xs,
+    color: theme.success,
+    fontWeight: '600',
+  },
+  alertAction: {
+    backgroundColor: theme.success,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  alertActionText: {
+    fontSize: fontSize.xs,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   actionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   actionCard: {
-    width: '23%',
-    aspectRatio: 1,
-    backgroundColor: theme.surface,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '47%',
+    backgroundColor: theme.card,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
     borderWidth: 1,
     borderColor: theme.border,
+    alignItems: 'center',
   },
   actionCardPressed: {
-    transform: [{ scale: 0.95 }],
-    opacity: 0.8,
+    transform: [{ scale: 0.97 }],
+    opacity: 0.85,
   },
-  actionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+  actionIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
-  actionIconText: {
-    fontSize: 20,
-  },
-  actionLabel: {
-    fontSize: fontSize.xs,
-    color: theme.textSecondary,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  emptyCard: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-  },
-  infoCard: {
-    padding: 0,
-    overflow: 'hidden',
-    backgroundColor: theme.card,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  infoRowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
-  },
-  infoLabelContainer: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: fontSize.md,
-    color: theme.textSecondary,
-  },
-  infoValue: {
-    fontSize: fontSize.md,
-    fontWeight: '700',
-    color: theme.textPrimary,
-  },
-  subjectsScroll: {
-    paddingVertical: spacing.xs,
-  },
-  subjectCard: {
-    alignItems: 'center',
-    padding: spacing.md,
-    marginRight: spacing.sm,
-    minWidth: 110,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
-  subjectCode: {
-    fontSize: fontSize.lg,
-    fontWeight: '800',
-    color: theme.success,
-    letterSpacing: -0.5,
-  },
-  subjectName: {
+  actionText: {
     fontSize: fontSize.sm,
-    color: theme.textSecondary,
-    marginTop: spacing.xs,
-    textAlign: 'center',
+    color: colors.text.primary,
+    fontWeight: '600',
   },
 });

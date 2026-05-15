@@ -1,5 +1,4 @@
 import * as Updates from 'expo-updates';
-import { router } from 'expo-router';
 
 class UpdateService {
   private isChecking = false;
@@ -81,7 +80,7 @@ class UpdateService {
     }
 
     try {
-      const update = await Updates.checkForUpdateAsync();
+      await Updates.checkForUpdateAsync();
       return {
         isDev: false,
         version: 'latest',

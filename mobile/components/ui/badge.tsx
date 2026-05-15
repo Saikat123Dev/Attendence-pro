@@ -1,11 +1,24 @@
 /**
- * Reusable Badge Component
+ * Reusable Badge Component - AttendX Design System
+ * Consistent color variants using theme tokens
  */
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { fontSize } from '../../constants/theme';
+import { fontSize, borderRadius } from '../../src/constants/theme';
 
-type BadgeVariant = 'present' | 'absent' | 'late' | 'success' | 'warning' | 'error' | 'info' | 'default' | 'primary' | 'light' | 'danger';
+type BadgeVariant =
+  | 'present'
+  | 'absent'
+  | 'late'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'info'
+  | 'default'
+  | 'primary'
+  | 'light'
+  | 'danger'
+  | 'on' | 'off';
 
 interface BadgeProps {
   text: string;
@@ -15,43 +28,48 @@ interface BadgeProps {
 }
 
 export function Badge({ text, variant = 'default', size = 'md', style }: BadgeProps) {
-  const getColors = () => {
+  const getColorScheme = () => {
     switch (variant) {
       case 'present':
-        return { bg: '#0E2B24', text: '#69D8B5', border: '#1D5D4D' };
+        return { bg: 'rgba(16, 185, 129, 0.15)', text: '#10B981', border: 'rgba(16, 185, 129, 0.3)' };
       case 'absent':
-        return { bg: '#3A1A22', text: '#FF9AA7', border: '#7D3140' };
+        return { bg: 'rgba(239, 68, 68, 0.15)', text: '#EF4444', border: 'rgba(239, 68, 68, 0.3)' };
       case 'late':
-        return { bg: '#3E2D10', text: '#F7C870', border: '#7A5A22' };
+        return { bg: 'rgba(245, 158, 11, 0.15)', text: '#F59E0B', border: 'rgba(245, 158, 11, 0.3)' };
       case 'success':
-        return { bg: '#0E2B24', text: '#69D8B5', border: '#1D5D4D' };
+        return { bg: 'rgba(16, 185, 129, 0.15)', text: '#10B981', border: 'rgba(16, 185, 129, 0.3)' };
       case 'warning':
-        return { bg: '#3E2D10', text: '#F7C870', border: '#7A5A22' };
-      case 'danger':
-        return { bg: '#3A1A22', text: '#FF9AA7', border: '#7D3140' };
+        return { bg: 'rgba(245, 158, 11, 0.15)', text: '#F59E0B', border: 'rgba(245, 158, 11, 0.3)' };
       case 'error':
-        return { bg: '#3A1A22', text: '#FF9AA7', border: '#7D3140' };
+        return { bg: 'rgba(239, 68, 68, 0.15)', text: '#EF4444', border: 'rgba(239, 68, 68, 0.3)' };
+      case 'danger':
+        return { bg: 'rgba(239, 68, 68, 0.15)', text: '#EF4444', border: 'rgba(239, 68, 68, 0.3)' };
       case 'info':
-        return { bg: '#162347', text: '#9EB2FF', border: '#3D53A8' };
+        return { bg: 'rgba(6, 182, 212, 0.15)', text: '#06B6D4', border: 'rgba(6, 182, 212, 0.3)' };
       case 'primary':
-        return { bg: '#162347', text: '#9EB2FF', border: '#3D53A8' };
+        return { bg: 'rgba(79, 110, 247, 0.15)', text: '#7B93FC', border: 'rgba(79, 110, 247, 0.3)' };
       case 'light':
-        return { bg: 'rgba(255,255,255,0.15)', text: '#FFFFFF', border: 'rgba(255,255,255,0.3)' };
+        return { bg: 'rgba(255, 255, 255, 0.1)', text: '#F0F2FF', border: 'rgba(255, 255, 255, 0.2)' };
+      case 'on':
+        return { bg: 'rgba(16, 185, 129, 0.15)', text: '#10B981', border: 'rgba(16, 185, 129, 0.3)' };
+      case 'off':
+        return { bg: 'rgba(100, 100, 100, 0.15)', text: '#8090C0', border: 'rgba(100, 100, 100, 0.3)' };
       default:
-        return { bg: '#1C2336', text: '#B7C0E0', border: '#2B3552' };
+        return { bg: 'rgba(30, 34, 53, 0.8)', text: '#C0C5E0', border: 'rgba(37, 43, 66, 0.8)' };
     }
   };
 
-  const colorScheme = getColors();
+  const colorScheme = getColorScheme();
 
   return (
     <View
       style={[
         styles.badge,
         size === 'sm' ? styles.badgeSm : styles.badgeMd,
-        { backgroundColor: colorScheme.bg },
-        { borderColor: colorScheme.border },
-        { borderWidth: 1 },
+        {
+          backgroundColor: colorScheme.bg,
+          borderColor: colorScheme.border,
+        },
         style,
       ]}
     >
@@ -70,10 +88,11 @@ export function Badge({ text, variant = 'default', size = 'md', style }: BadgePr
 
 const styles = StyleSheet.create({
   badge: {
-    borderRadius: 999,
+    borderRadius: borderRadius.full,
     alignSelf: 'flex-start',
     minHeight: 24,
     justifyContent: 'center',
+    borderWidth: 1,
   },
   badgeSm: {
     paddingHorizontal: 10,
@@ -85,12 +104,14 @@ const styles = StyleSheet.create({
   },
   text: {
     fontWeight: '800',
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   textSm: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
   },
   textMd: {
     fontSize: fontSize.sm,
   },
 });
+
+export default Badge;

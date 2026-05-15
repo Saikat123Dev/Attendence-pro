@@ -454,32 +454,38 @@ function StudentList({ subjectId, refreshKey, onUnenroll, searchQuery }: any) {
           ) : students.length === 0 ? (
             <Text style={styles.noStudents}>No students enrolled yet</Text>
           ) : (
-            students.map((student) => (
-              <View key={student._id} style={styles.enrolledStudent}>
-                <View style={styles.studentAvatar}>
-                  <Text style={styles.studentAvatarText}>
-                    {student.name?.charAt(0)?.toUpperCase() || '?'}
-                  </Text>
+            students.map((student) => {
+              const percentage = student.attendancePercentage || 0;
+              const isCritical = percentage < 60;
+              const isLow = percentage < 75 && percentage >= 60;
+              const percentageColor = isCritical ? theme.danger : isLow ? theme.warning : theme.success;
+              return (
+                <View key={student._id} style={styles.enrolledStudent}>
+                  <View style={styles.studentAvatar}>
+                    <Text style={styles.studentAvatarText}>
+                      {student.name?.charAt(0)?.toUpperCase() || '?'}
+                    </Text>
+                  </View>
+                  <View style={styles.studentInfo}>
+                    <Text style={styles.studentName}>{student.name}</Text>
+                    <Text style={styles.studentMeta}>
+                      {student.rollNumber || student.registrationNumber || 'No ID'} • {student.totalSessions || 0} sessions
+                    </Text>
+                  </View>
+                  <View style={styles.attendanceBadge}>
+                    <Text style={[styles.attendancePercentage, { color: percentageColor }]}>
+                      {Math.round(percentage)}%
+                    </Text>
+                  </View>
+                  <Pressable
+                    style={styles.unenrollBtn}
+                    onPress={() => onUnenroll(student._id, student.name)}
+                  >
+                    <MaterialIcons name="person-remove-alt-1" size={18} color={theme.danger} />
+                  </Pressable>
                 </View>
-                <View style={styles.studentInfo}>
-                  <Text style={styles.studentName}>{student.name}</Text>
-                  <Text style={styles.studentMeta}>
-                    {student.rollNumber || student.registrationNumber || 'No ID'}
-                  </Text>
-                </View>
-                <Badge
-                  text="Enrolled"
-                  variant="default"
-                  size="sm"
-                />
-                <Pressable
-                  style={styles.unenrollBtn}
-                  onPress={() => onUnenroll(student._id, student.name)}
-                >
-                  <MaterialIcons name="person-remove-alt-1" size={18} color={theme.danger} />
-                </Pressable>
-              </View>
-            ))
+              );
+            })
           )}
         </View>
       )}
@@ -738,6 +744,17 @@ const styles = StyleSheet.create({
     color: theme.danger,
     fontSize: 16,
     fontWeight: '600',
+  },
+  attendanceBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 8,
+    backgroundColor: theme.card,
+    marginRight: spacing.xs,
+  },
+  attendancePercentage: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
   },
   // Modal
   modalOverlay: {

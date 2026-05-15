@@ -1,15 +1,17 @@
 /**
- * Reusable Avatar Component
+ * Reusable Avatar Component - AttendX Design System
+ * Role-based coloring with consistent theming
  */
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { colors, borderRadius } from '../../src/constants/theme';
 
 interface AvatarProps {
   name: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
   style?: ViewStyle;
-  source?: string;
   type?: 'teacher' | 'student';
+  borderColor?: string;
 }
 
 function getInitials(name: string): string {
@@ -23,15 +25,15 @@ function getInitials(name: string): string {
 
 function getColorFromName(name: string): string {
   const colorOptions = [
-    '#4F6EF7',
-    '#2A9D8F',
-    '#3D5A80',
-    '#E76F51',
-    '#F4A261',
-    '#6A4C93',
-    '#118AB2',
-    '#8E6C88',
-    '#7A8B5A',
+    '#4F6EF7', // Primary blue
+    '#7B3AED', // Purple
+    '#0EA5E9', // Sky blue
+    '#EC4899', // Pink
+    '#F59E0B', // Amber
+    '#10B981', // Emerald
+    '#6366F1', // Indigo
+    '#8B5CF6', // Violet
+    '#14B8A6', // Teal
   ];
 
   let hash = 0;
@@ -41,50 +43,39 @@ function getColorFromName(name: string): string {
   return colorOptions[Math.abs(hash) % colorOptions.length];
 }
 
-export function Avatar({ name, size = 'md', style, type = 'student' }: AvatarProps) {
-  const getSizeStyle = () => {
-    switch (size) {
-      case 'sm':
-        return { width: 32, height: 32, fontSize: 11 };
-      case 'md':
-        return { width: 48, height: 48, fontSize: 16 };
-      case 'lg':
-        return { width: 64, height: 64, fontSize: 22 };
-      case 'xl':
-        return { width: 96, height: 96, fontSize: 32 };
-      case 'xxl':
-        return { width: 120, height: 120, fontSize: 40 };
-      default:
-        return { width: 48, height: 48, fontSize: 16 };
-    }
+export function Avatar({ name, size = 'md', style, type = 'student', borderColor }: AvatarProps) {
+  const sizeStyles = {
+    xs: { container: { width: 24, height: 24 }, text: { fontSize: 9 } },
+    sm: { container: { width: 32, height: 32 }, text: { fontSize: 11 } },
+    md: { container: { width: 44, height: 44 }, text: { fontSize: 15 } },
+    lg: { container: { width: 56, height: 56 }, text: { fontSize: 19 } },
+    xl: { container: { width: 80, height: 80 }, text: { fontSize: 26 } },
+    xxl: { container: { width: 120, height: 120 }, text: { fontSize: 38 } },
   };
 
-  const getTypeColors = () => {
-    if (type === 'teacher') {
-      return { border: '#7B93FC' };
-    }
-    return { border: '#43C49A' };
+  const getTypeBorderColor = () => {
+    if (borderColor) return borderColor;
+    if (type === 'teacher') return colors.primary.primaryLight;
+    return colors.success;
   };
 
-  const sizeStyle = getSizeStyle();
-  const typeColors = getTypeColors();
+  const currentSize = sizeStyles[size] || sizeStyles.md;
   const backgroundColor = getColorFromName(name);
 
   return (
     <View
       style={[
-        styles.avatar,
+        styles.container,
         {
-          width: sizeStyle.width,
-          height: sizeStyle.height,
+          width: currentSize.container.width,
+          height: currentSize.container.height,
           backgroundColor,
-          borderColor: typeColors.border,
-          borderWidth: 2,
+          borderColor: getTypeBorderColor(),
         },
         style,
       ]}
     >
-      <Text style={[styles.text, { fontSize: sizeStyle.fontSize }]}>
+      <Text style={[styles.text, { fontSize: currentSize.text.fontSize }]}>
         {getInitials(name)}
       </Text>
     </View>
@@ -92,13 +83,17 @@ export function Avatar({ name, size = 'md', style, type = 'student' }: AvatarPro
 }
 
 const styles = StyleSheet.create({
-  avatar: {
-    borderRadius: 9999,
+  container: {
+    borderRadius: borderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
   },
   text: {
     color: '#FFFFFF',
     fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });
+
+export default Avatar;

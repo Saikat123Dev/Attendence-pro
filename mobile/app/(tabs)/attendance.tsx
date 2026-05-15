@@ -53,20 +53,19 @@ export default function AttendanceScreen() {
   const [dateFilter, setDateFilter] = useState<'7' | '30' | 'all'>('30');
   const [subjectAnalytics, setSubjectAnalytics] = useState<any[]>([]);
   const [selectedSubjectAnalytics, setSelectedSubjectAnalytics] = useState<any>(null);
-  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
 
   const isTeacher = user?.role === 'TEACHER';
   const accentColor = isTeacher ? theme.primary : theme.success;
 
   // Calculate date filter
-  const getStartDate = () => {
-    if (dateFilter === 'all') return null;
+  const getStartDate = useCallback(() => {
+    if (dateFilter === 'all') return undefined;
     const days = parseInt(dateFilter, 10);
     const date = new Date();
     date.setDate(date.getDate() - days);
     return date.toISOString();
-  };
+  }, [dateFilter]);
 
   const loadData = useCallback(async () => {
     try {
@@ -98,7 +97,7 @@ export default function AttendanceScreen() {
     } finally {
       setLoading(false);
     }
-  }, [isTeacher, selectedSubject, dateFilter]);
+  }, [isTeacher, selectedSubject, getStartDate]);
 
   useEffect(() => {
     loadData();

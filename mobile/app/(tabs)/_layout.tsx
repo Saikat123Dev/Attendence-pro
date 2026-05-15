@@ -4,10 +4,11 @@
  */
 import { Tabs, Redirect } from 'expo-router';
 import React from 'react';
-import { ActivityIndicator, View, StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Loading } from '@/components/ui';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAuth } from '@/context/AuthContext';
 
@@ -31,11 +32,7 @@ export default function TabLayout() {
   const { user, isLoading, isAuthenticated } = useAuth();
 
   if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.primary} />
-      </View>
-    );
+    return <Loading message="Loading your workspace..." />;
   }
 
   if (!isAuthenticated) {
@@ -52,47 +49,47 @@ export default function TabLayout() {
   return (
     <ErrorBoundary>
       <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: accentColor,
-        tabBarInactiveTintColor: theme.textSecondary,
-        headerShown: true,
-        tabBarButton: HapticTab,
-        tabBarStyle: {
-          position: 'absolute',
-          backgroundColor: theme.surface,
-          borderTopColor: theme.border,
-          borderTopWidth: 1,
-          marginHorizontal: 12,
-          marginBottom: Platform.OS === 'ios' ? 8 : 10,
-          borderRadius: 22,
-          height: Platform.OS === 'ios' ? 88 : 72,
-          paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.4,
-          shadowRadius: 16,
-          elevation: 24,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          letterSpacing: 0.3,
-        },
-        headerStyle: {
-          backgroundColor: theme.background,
-          borderBottomWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: theme.textPrimary,
-        headerTitleStyle: {
-          fontWeight: '700',
-          fontSize: 18,
-          letterSpacing: -0.5,
-        },
-        headerShadowVisible: false,
-      }}
+        screenOptions={{
+          tabBarActiveTintColor: accentColor,
+          tabBarInactiveTintColor: theme.textSecondary,
+          headerShown: true,
+          tabBarButton: HapticTab,
+          tabBarStyle: {
+            position: 'absolute',
+            backgroundColor: theme.surface,
+            borderTopColor: theme.border,
+            borderTopWidth: 1,
+            marginHorizontal: 12,
+            marginBottom: Platform.OS === 'ios' ? 8 : 10,
+            borderRadius: 22,
+            height: Platform.OS === 'ios' ? 88 : 72,
+            paddingTop: 8,
+            paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 0.4,
+            shadowRadius: 16,
+            elevation: 24,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600',
+            letterSpacing: 0.3,
+          },
+          headerStyle: {
+            backgroundColor: theme.background,
+            borderBottomWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          headerTintColor: theme.textPrimary,
+          headerTitleStyle: {
+            fontWeight: '700',
+            fontSize: 18,
+            letterSpacing: -0.5,
+          },
+          headerShadowVisible: false,
+        }}
       >
       <Tabs.Screen
         name="index"
@@ -173,12 +170,6 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: theme.background,
-  },
   tabIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',

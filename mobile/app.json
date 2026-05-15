@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -18,7 +17,6 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.developerpacman123.mobile"
     },
@@ -62,6 +60,9 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "owner": "saikat123dev"
+    "owner": "saikat123dev",
+    "updates": {
+      "url": "https://u.expo.dev/9da06cdd-d617-44d5-9449-facfaaaeaf38"
+    }
   }
 }

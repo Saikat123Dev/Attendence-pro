@@ -1,5 +1,6 @@
 /**
- * Reusable Input Component
+ * Reusable Input Component - AttendX Design System
+ * Consistent theming, focus glow animation, error states
  */
 import React, { useState } from 'react';
 import {
@@ -9,8 +10,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInputProps,
+  ViewStyle,
 } from 'react-native';
-import { spacing, fontSize, borderRadius, colors } from '../../constants/theme';
+import { spacing, fontSize, borderRadius, colors } from '../../src/constants/theme';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -19,6 +21,7 @@ interface InputProps extends TextInputProps {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
+  containerStyle?: ViewStyle;
 }
 
 export function Input({
@@ -29,18 +32,24 @@ export function Input({
   rightIcon,
   onRightIconPress,
   style,
+  containerStyle,
   ...props
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
 
-  const getBorderColor = (): string => {
-    if (error) return '#EF4444';
-    if (isFocused) return '#4F6EF7';
-    return '#252B42';
+  const getBorderColor = () => {
+    if (error) return colors.danger;
+    if (isFocused) return colors.primary.primary;
+    return colors.border.default;
+  };
+
+  const getShadowOpacity = () => {
+    if (isFocused) return 0.25;
+    return 0;
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
 
       <View
@@ -49,7 +58,7 @@ export function Input({
           {
             borderColor: getBorderColor(),
             borderWidth: isFocused ? 2 : 1,
-            shadowOpacity: isFocused ? 0.28 : 0,
+            shadowOpacity: getShadowOpacity(),
           },
           error && styles.errorBorder,
         ]}
@@ -57,9 +66,14 @@ export function Input({
         {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
 
         <TextInput
-          style={[styles.input, leftIcon ? styles.inputWithLeftIcon : null, style]}
-          placeholderTextColor="#6B7194"
-          selectionColor={colors.primary}
+          style={[
+            styles.input,
+            leftIcon ? styles.inputWithLeftIcon : null,
+            rightIcon ? styles.inputWithRightIcon : null,
+            style,
+          ]}
+          placeholderTextColor={colors.text.muted}
+          selectionColor={colors.primary.primary}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           {...props}
@@ -76,7 +90,12 @@ export function Input({
         )}
       </View>
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && (
+        <Text style={styles.error}>
+          <Text style={styles.errorIcon}>⚠ </Text>
+          {error}
+        </Text>
+      )}
       {hint && !error && <Text style={styles.hint}>{hint}</Text>}
     </View>
   );
@@ -84,38 +103,43 @@ export function Input({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   label: {
     fontSize: fontSize.sm,
     fontWeight: '600',
-    color: '#C0C5E0',
+    color: colors.text.secondary,
     marginBottom: spacing.xs,
+    letterSpacing: 0.2,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0D1428',
+    backgroundColor: colors.bg.card,
     borderRadius: borderRadius.md,
     minHeight: 52,
-    shadowColor: '#4F6EF7',
+    borderWidth: 1,
+    shadowColor: colors.primary.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 12,
+    shadowRadius: 8,
     elevation: 2,
   },
   errorBorder: {
     borderWidth: 2,
-    borderColor: '#EF4444',
+    borderColor: colors.danger,
   },
   input: {
     flex: 1,
     fontSize: fontSize.md,
-    color: '#F0F2FF',
+    color: colors.text.primary,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
   inputWithLeftIcon: {
     paddingLeft: spacing.xs,
+  },
+  inputWithRightIcon: {
+    paddingRight: spacing.xs,
   },
   leftIcon: {
     paddingLeft: spacing.md,
@@ -125,13 +149,18 @@ const styles = StyleSheet.create({
   },
   error: {
     fontSize: fontSize.xs,
-    color: '#EF4444',
+    color: colors.danger,
     marginTop: spacing.xs,
     fontWeight: '500',
   },
+  errorIcon: {
+    fontSize: fontSize.xs,
+  },
   hint: {
     fontSize: fontSize.xs,
-    color: '#8E8E93',
+    color: colors.text.muted,
     marginTop: spacing.xs,
   },
 });
+
+export default Input;

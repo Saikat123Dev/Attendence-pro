@@ -1,17 +1,12 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { colors } from '@/constants/theme';
+import { Loading } from '@/components/ui';
 
 export default function RootIndex() {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <Loading message="Restoring your session..." />;
   }
 
   if (isAuthenticated && user) {
@@ -28,11 +23,3 @@ export default function RootIndex() {
   return <Redirect href="/(auth)/login" />;
 }
 
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-});
