@@ -1,6 +1,6 @@
-import { Redirect } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
 import { Loading } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
+import { Redirect } from 'expo-router';
 
 export default function RootIndex() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -22,4 +22,3 @@ export default function RootIndex() {
   // Not authenticated, go to login
   return <Redirect href="/(auth)/login" />;
 }
-

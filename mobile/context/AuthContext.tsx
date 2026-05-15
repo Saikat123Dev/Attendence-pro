@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect, useRef, ReactNode } from 'react';
-import { User } from '../types';
-import { apiService } from '../services/api';
 import { router } from 'expo-router';
+import React, { createContext, ReactNode, useContext, useEffect, useReducer, useRef } from 'react';
+import { apiService } from '../services/api';
+import { User } from '../types';
 
 function normalizeUserRole(user: User | null): User | null {
   if (!user || user.role) {

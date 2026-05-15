@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { colors, fontSize, spacing } from '@/constants/theme';
 import { router } from 'expo-router';
-import { colors, spacing, fontSize } from '@/constants/theme';
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type ErrorBoundaryProps = {
   children?: React.ReactNode;

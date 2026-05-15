@@ -3,25 +3,25 @@
  * Teacher: Manage subjects (CRUD)
  * Student: View enrolled subjects (read-only)
  */
-import { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  Pressable,
-  Alert,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Badge, Button, Input, Loading } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
-import { Badge, Input, Loading, Button } from '@/components/ui';
-import { colors, spacing, fontSize, borderRadius } from '@/src/constants/theme';
+import { borderRadius, colors, fontSize, spacing } from '@/src/constants/theme';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useCallback, useEffect, useState } from 'react';
+import {
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
 const theme = {
   background: colors.bg.base,

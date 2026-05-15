@@ -2,24 +2,24 @@
  * Home Screen - AttendX Design System
  * Role-Based Dashboard with Teacher (Blue) and Student (Green) themes
  */
-import { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  TouchableOpacity,
-  Pressable,
-} from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Avatar, Badge, Loading } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
-import { Badge, Avatar, Loading } from '@/components/ui';
-import { colors, spacing, fontSize, borderRadius } from '@/src/constants/theme';
+import { borderRadius, colors, fontSize, spacing } from '@/src/constants/theme';
 import { StudentProfile, TeacherProfile } from '@/types';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import {
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 const theme = {
   background: colors.bg.base,

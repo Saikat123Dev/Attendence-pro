@@ -3,26 +3,26 @@
  * Teacher: Session management with gradient stats
  * Student: Attendance records with filter chips and status badges
  */
-import { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  Pressable,
-  Modal,
-  ActivityIndicator,
-} from 'react-native';
+import { AttendanceRecordItem } from '@/components/attendance/record-item';
+import { Badge, EmptyState, Loading } from '@/components/ui';
+import { colors, fontSize, spacing } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { apiService } from '@/services/api';
+import { AttendanceRecord } from '@/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useAuth } from '@/context/AuthContext';
-import { apiService } from '@/services/api';
-import { Badge, Loading, EmptyState } from '@/components/ui';
-import { AttendanceRecordItem } from '@/components/attendance/record-item';
-import { colors, spacing, fontSize } from '@/constants/theme';
-import { AttendanceRecord } from '@/types';
+import { useCallback, useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Modal,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
 // AttendX Dark Pro Theme Colors
 const theme = {

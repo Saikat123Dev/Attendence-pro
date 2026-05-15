@@ -2,24 +2,24 @@
  * Complete Profile Screen - AttendX Design System
  * Role selection and profile completion
  */
-import { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Pressable,
-  Alert,
-} from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Avatar, Button, Input } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
-import { Button, Input, Avatar } from '@/components/ui';
-import { spacing, fontSize, borderRadius, colors } from '@/src/constants/theme';
+import { borderRadius, colors, fontSize, spacing } from '@/src/constants/theme';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
 export default function CompleteProfileScreen() {
   const { user, setUser } = useAuth();

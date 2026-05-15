@@ -2,22 +2,22 @@
  * Register Screen - AttendX Design System
  * Account creation with consistent theming
  */
-import { useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Pressable,
-} from 'react-native';
-import { Link } from 'expo-router';
+import { Button, Input } from '@/components/ui';
+import { useAuth } from '@/context/AuthContext';
+import { borderRadius, colors, fontSize, spacing } from '@/src/constants/theme';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '@/context/AuthContext';
-import { Button, Input } from '@/components/ui';
-import { spacing, fontSize, borderRadius, colors } from '@/src/constants/theme';
+import { Link } from 'expo-router';
+import { useMemo, useRef, useState } from 'react';
+import {
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
 const theme = {
   bg: colors.bg.base,

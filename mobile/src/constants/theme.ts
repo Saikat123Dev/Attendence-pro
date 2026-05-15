@@ -1,7 +1,7 @@
 // AttendX Theme - Comprehensive Design System
 // For React Native Mobile Application
 
-import { ViewStyle, TextStyle } from 'react-native';
+import { TextStyle, ViewStyle } from 'react-native';
 
 // ============================================================
 // COLOR PALETTE
@@ -448,17 +448,8 @@ export const theme: Theme = {
 // ============================================================
 
 export {
-  colors,
-  spacing,
-  radius,
-  radius as borderRadius,
-  fontSize,
-  fontWeights,
-  lineHeight,
-  shadows,
-  gradients,
-  opacity,
-  zIndex,
+    radius as borderRadius, colors, fontSize,
+    fontWeights, gradients, lineHeight, opacity, radius, shadows, spacing, zIndex
 };
 
 // ============================================================

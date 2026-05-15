@@ -2,14 +2,14 @@
  * Tab Layout - AttendX Dark Pro Theme
  * Tab Bar with active dot indicator and role-based navigation
  */
-import { Tabs, Redirect } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Platform, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Loading } from '@/components/ui';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { HapticTab } from '@/components/haptic-tab';
+import { Loading } from '@/components/ui';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/AuthContext';
 
 // Theme colors for AttendX Dark Pro
