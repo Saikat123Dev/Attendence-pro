@@ -7,17 +7,45 @@ const Student = require('../models/Student');
 const Teacher = require('../models/Teacher');
 const { resolveUserRoleByUserId } = require('../utils/profileResolver');
 
+function getUserId(user) {
+  return user?._id || user?.id || user?.sub || null;
+}
+
+function mapDuplicateProfileError(err) {
+  if (err?.code !== 11000) {
+    return err;
+  }
+
+  const duplicateField = Object.keys(err.keyPattern || {})[0] || 'field';
+  const duplicateValue = err.keyValue?.[duplicateField];
+
+  return Object.assign(new Error(`${duplicateField} already exists`), {
+    status: 409,
+    error: 'DUPLICATE_ENTRY',
+    field: duplicateField,
+    value: duplicateValue,
+  });
+}
+
 /**
  * Generate access and refresh tokens for a user
  * @param {Object} user - User document
  * @returns {Object} { accessToken, refreshToken }
  */
 async function generateTokens(user) {
+  const userId = getUserId(user);
+  if (!userId) {
+    throw Object.assign(new Error('Cannot generate tokens without a user id'), {
+      status: 500,
+      error: 'TOKEN_GENERATION_FAILED',
+    });
+  }
+
   const jti = uuidv4();
 
   const accessToken = jwt.sign(
     {
-      sub: user._id,
+      sub: userId,
       role: user.role,
       type: 'ACCESS',
       email: user.email,
@@ -28,7 +56,7 @@ async function generateTokens(user) {
 
   const refreshToken = jwt.sign(
     {
-      sub: user._id,
+      sub: userId,
       type: 'REFRESH',
       jti,
     },
@@ -42,7 +70,7 @@ async function generateTokens(user) {
 
   // Store refresh token in database
   await RefreshToken.create({
-    userId: user._id,
+    userId,
     token: refreshToken,
     expiresAt,
   });
@@ -166,62 +194,59 @@ async function completeProfile(userId, profileData) {
     });
   }
 
-  // If role is already set to the same value, treat as success (idempotent).
-  if (user.role && user.role.toUpperCase() === normalizedRole) {
-    const fullUser = await getFullUser(user._id);
-    const tokens = await generateTokens({ ...user, role: normalizedRole });
-    return { user: fullUser, ...tokens };
+  try {
+    // Create or update the role-specific profile first so a unique-key conflict
+    // does not leave the account with a role but without the matching profile.
+    if (normalizedRole === 'STUDENT') {
+      await Student.findOneAndUpdate(
+        { userId: user._id },
+        {
+          $set: {
+            userId: user._id,
+            name: user.name,
+            rollNumber: roleSpecificData.rollNumber?.trim().toUpperCase(),
+            registrationNumber: roleSpecificData.registrationNumber?.trim().toUpperCase(),
+            branch: roleSpecificData.branch?.trim().toUpperCase(),
+            semester: roleSpecificData.semester,
+          },
+          $setOnInsert: { subjects: [] },
+        },
+        { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+      );
+    } else if (normalizedRole === 'TEACHER') {
+      await Teacher.findOneAndUpdate(
+        { userId: user._id },
+        {
+          $set: {
+            userId: user._id,
+            name: user.name,
+            employeeId: roleSpecificData.employeeId?.trim().toUpperCase(),
+            department: roleSpecificData.department?.trim().toUpperCase(),
+          },
+          $setOnInsert: { subjects: [] },
+        },
+        { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+      );
+    }
+  } catch (err) {
+    throw mapDuplicateProfileError(err);
   }
 
-  // Update the existing user record in place so the completion step stays idempotent.
-  const updatedUser = await User.findByIdAndUpdate(
-    user._id,
-    { $set: { role: normalizedRole } },
-    { new: true, runValidators: true }
-  );
+  const effectiveUser =
+    user.role && user.role.toUpperCase() === normalizedRole
+      ? user
+      : await User.findByIdAndUpdate(
+          user._id,
+          { $set: { role: normalizedRole } },
+          { new: true, runValidators: true }
+        );
 
-  if (!updatedUser) {
+  if (!effectiveUser) {
     throw Object.assign(new Error('User not found'), { status: 404, error: 'USER_NOT_FOUND' });
   }
 
-  // Generate new tokens with the correct role
-  const tokens = await generateTokens(updatedUser);
-
-  // Create or update the role-specific profile for this user.
-  // The unique key is userId, so repeated submissions update the same record.
-  if (normalizedRole === 'STUDENT') {
-    await Student.findOneAndUpdate(
-      { userId: user._id },
-      {
-        $set: {
-          userId: user._id,
-          name: updatedUser.name,
-          rollNumber: roleSpecificData.rollNumber?.trim().toUpperCase(),
-          registrationNumber: roleSpecificData.registrationNumber?.trim().toUpperCase(),
-          branch: roleSpecificData.branch?.trim().toUpperCase(),
-          semester: roleSpecificData.semester,
-        },
-        $setOnInsert: { subjects: [] },
-      },
-      { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
-    );
-  } else if (normalizedRole === 'TEACHER') {
-    await Teacher.findOneAndUpdate(
-      { userId: user._id },
-      {
-        $set: {
-          userId: user._id,
-          name: updatedUser.name,
-          employeeId: roleSpecificData.employeeId?.trim().toUpperCase(),
-          department: roleSpecificData.department?.trim().toUpperCase(),
-        },
-        $setOnInsert: { subjects: [] },
-      },
-      { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
-    );
-  }
-
-  const fullUser = await getFullUser(user._id);
+  const tokens = await generateTokens(effectiveUser);
+  const fullUser = await getFullUser(effectiveUser._id);
   return { user: fullUser, ...tokens };
 }
 

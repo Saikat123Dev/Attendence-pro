@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import React, { createContext, ReactNode, useContext, useEffect, useReducer, useRef } from 'react';
 import { apiService } from '../services/api';
-import { User } from '../types';
+import type { RegisterRequest, User } from '../types';
 
 function normalizeUserRole(user: User | null): User | null {
   if (!user || user.role) {
@@ -66,7 +66,7 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
   setUser: (user: User | null) => void;
@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function register(data: any) {
+  async function register(data: RegisterRequest) {
     if (isRegisteringRef.current) {
       return;
     }

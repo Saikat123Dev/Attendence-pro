@@ -5,6 +5,7 @@
 import { Button, Input } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { borderRadius, colors, fontSize, spacing } from '@/src/constants/theme';
+import type { RegisterRequest, UserRole } from '@/types';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
@@ -32,6 +33,7 @@ export default function RegisterScreen() {
   const { register, isLoading: authLoading, error, clearError } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const submitLockRef = useRef(false);
+  const [role, setRole] = useState<UserRole | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -58,6 +60,7 @@ export default function RegisterScreen() {
       formData.email.trim() &&
       formData.password &&
       formData.confirmPassword &&
+      role &&
       !passwordError &&
       !confirmPasswordError
   );
@@ -72,11 +75,14 @@ export default function RegisterScreen() {
     submitLockRef.current = true;
     setIsLoading(true);
     try {
-      await register({
+      const payload: RegisterRequest = {
         name: formData.name.trim(),
         email: formData.email.trim(),
         password: formData.password,
-      });
+        role: role as UserRole,
+      };
+
+      await register(payload);
     } catch {
       // Error handled in context
     } finally {
@@ -118,6 +124,59 @@ export default function RegisterScreen() {
               </Pressable>
             </View>
           ) : null}
+
+          <View style={styles.roleSection}>
+            <Text style={styles.sectionTitle}>Account Type</Text>
+            <View style={styles.roleButtons}>
+              <Pressable
+                onPress={() => {
+                  setRole('TEACHER');
+                  clearError();
+                }}
+                disabled={isLoading}
+                style={({ pressed }) => [
+                  styles.roleButton,
+                  role === 'TEACHER' && styles.roleButtonActive,
+                  pressed && !isLoading && styles.roleButtonPressed,
+                ]}
+              >
+                <View style={[styles.roleIcon, role === 'TEACHER' && styles.roleIconActive]}>
+                  <MaterialIcons
+                    name="school"
+                    size={18}
+                    color={role === 'TEACHER' ? '#FFFFFF' : colors.text.secondary}
+                  />
+                </View>
+                <Text style={[styles.roleButtonText, role === 'TEACHER' && styles.roleButtonTextActive]}>
+                  Teacher
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  setRole('STUDENT');
+                  clearError();
+                }}
+                disabled={isLoading}
+                style={({ pressed }) => [
+                  styles.roleButton,
+                  role === 'STUDENT' && styles.roleButtonActive,
+                  pressed && !isLoading && styles.roleButtonPressed,
+                ]}
+              >
+                <View style={[styles.roleIcon, role === 'STUDENT' && styles.roleIconActive]}>
+                  <MaterialIcons
+                    name="person"
+                    size={18}
+                    color={role === 'STUDENT' ? '#FFFFFF' : colors.text.secondary}
+                  />
+                </View>
+                <Text style={[styles.roleButtonText, role === 'STUDENT' && styles.roleButtonTextActive]}>
+                  Student
+                </Text>
+              </Pressable>
+            </View>
+          </View>
 
           <Input
             label="Full Name"
@@ -248,6 +307,60 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.border,
     padding: spacing.xl,
+  },
+  roleSection: {
+    marginBottom: spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: theme.textSecondary,
+    marginBottom: spacing.md,
+    letterSpacing: 0.2,
+  },
+  roleButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  roleButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    gap: spacing.sm,
+    backgroundColor: colors.bg.elevated,
+  },
+  roleButtonActive: {
+    borderColor: 'transparent',
+    backgroundColor: colors.primary.primary,
+  },
+  roleButtonPressed: {
+    transform: [{ scale: 0.98 }],
+    opacity: 0.92,
+  },
+  roleIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bg.base,
+  },
+  roleIconActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  roleButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+    color: theme.textSecondary,
+  },
+  roleButtonTextActive: {
+    color: '#FFFFFF',
   },
   errorWrap: {
     flexDirection: 'row',

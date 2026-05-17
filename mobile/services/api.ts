@@ -1,6 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthTokens } from '../types';
+import type { AuthTokens, RegisterRequest } from '../types';
 
 const API_BASE_URL ='https://attendence-pro-qzxc.onrender.com/api';
 
@@ -142,7 +142,7 @@ class ApiService {
     return response.data;
   }
 
-  async register(data: Record<string, unknown>) {
+  async register(data: RegisterRequest) {
     const response = await this.api.post('/auth/register', data);
     return response.data;
   }
